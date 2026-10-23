@@ -1,0 +1,7 @@
+# dsh-debate-workbench bundle patch：把插件自己的 loader 行插进 profile。
+#
+# 这个包同时是 bundle 与 plugin：bundle 层只声明一行 entry，
+# entry 的 name 指向本包名，宿主按 profile 的 node_modules 解析到 lib/index.js。
+- insert:
+    - id: debate-workbench
+      name: dsh-debate-workbench

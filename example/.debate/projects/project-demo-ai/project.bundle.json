@@ -1,0 +1,615 @@
+{
+  "format": "debateweaver-project",
+  "version": 1,
+  "exportedAt": "2026-10-22T01:51:07.303Z",
+  "project": {
+    "id": "project-demo-ai",
+    "title": "人工智能的发展利大于弊",
+    "side": "pro",
+    "format": "chinese",
+    "status": "active",
+    "createdAt": "2026-10-22T01:03:52.002Z",
+    "updatedAt": "2026-10-22T01:51:07.303Z",
+    "argumentTreeId": "tree-demo-ai"
+  },
+  "argumentTree": {
+    "id": "tree-demo-ai",
+    "projectId": "project-demo-ai",
+    "nodes": [
+      {
+        "id": "n-stance",
+        "type": "stance",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "data": {
+          "label": "我方立场：AI 发展整体利大于弊",
+          "description": "AI 扩展了人类解决问题的能力，且这种扩展可治理，因此整体净收益为正。"
+        }
+      },
+      {
+        "id": "n-status",
+        "type": "status",
+        "position": {
+          "x": 300,
+          "y": 0
+        },
+        "data": {
+          "label": "现实：AI 已在多个行业落地",
+          "description": "制造业、医疗、教育已出现规模化应用，不是假设而是现状。"
+        }
+      },
+      {
+        "id": "n-claim1",
+        "type": "claim",
+        "position": {
+          "x": 600,
+          "y": 0
+        },
+        "data": {
+          "label": "AI 提升生产效率，扩大可分配总量",
+          "description": "自动化替代重复劳动 → 单位工时产出上升 → 同等投入获得更多产出 → 社会可分配总量增加 → 再分配具备物质前提。"
+        }
+      },
+      {
+        "id": "n-ev1",
+        "type": "evidence",
+        "position": {
+          "x": 900,
+          "y": 0
+        },
+        "data": {
+          "label": "制造业产出数据"
+        }
+      },
+      {
+        "id": "n-compare1",
+        "type": "compare",
+        "position": {
+          "x": 900,
+          "y": 140
+        },
+        "data": {
+          "label": "比较：总量增加 vs 分配恶化",
+          "description": "对方只能在分配层面争论；总量不增加时再分配只能零和，总量增加是任何再分配的前提。"
+        }
+      },
+      {
+        "id": "n-premise1",
+        "type": "premise",
+        "position": {
+          "x": 900,
+          "y": 280
+        },
+        "data": {
+          "label": "效率收益可以被再分配",
+          "description": "再分配是制度变量，不由技术决定。",
+          "details": {
+            "attackable": "可挑战：若收益完全被少数主体攫取，总量增加不等于福祉增加"
+          }
+        }
+      },
+      {
+        "id": "n-crowd",
+        "type": "crowd",
+        "position": {
+          "x": 300,
+          "y": 140
+        },
+        "data": {
+          "label": "受影响人群：普通消费者与低技能劳动者",
+          "description": "消费者获得更低价的服务；低技能劳动者承担转换成本。"
+        }
+      },
+      {
+        "id": "n-claim2",
+        "type": "claim",
+        "position": {
+          "x": 600,
+          "y": 140
+        },
+        "data": {
+          "label": "AI 降低专业服务门槛，扩大机会",
+          "description": "模型与推理成本下降 → 教育医疗咨询边际成本下降 → 低收入群体获得服务比例上升 → 能力差距收窄。"
+        }
+      },
+      {
+        "id": "n-ev2",
+        "type": "evidence",
+        "position": {
+          "x": 900,
+          "y": 420
+        },
+        "data": {
+          "label": "开源模型扩散数据"
+        }
+      },
+      {
+        "id": "n-claim3",
+        "type": "claim",
+        "position": {
+          "x": 300,
+          "y": 280
+        },
+        "data": {
+          "label": "风险来自滥用与失范，属于治理问题",
+          "description": "风险与治理是同一技术能力的两面：更强的模型同样带来更强的检测与审计手段。"
+        }
+      },
+      {
+        "id": "n-value",
+        "type": "attitude",
+        "position": {
+          "x": 300,
+          "y": 420
+        },
+        "data": {
+          "label": "价值：技术扩展了人可以选择的生活方式",
+          "description": "真正的公平不是让所有人停在原地\n而是让更多人有向上流动的机会。",
+          "details": {
+            "wrap": "true"
+          }
+        }
+      },
+      {
+        "id": "node-92ccee6d-b625-4dd2-9482-e3649804307b",
+        "type": "status",
+        "position": {
+          "x": 600,
+          "y": 280
+        },
+        "data": {
+          "label": "现状下模型发展迭代快"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "n-stance",
+        "target": "n-status"
+      },
+      {
+        "id": "e2",
+        "source": "n-status",
+        "target": "n-claim1"
+      },
+      {
+        "id": "e3",
+        "source": "n-claim1",
+        "target": "n-ev1"
+      },
+      {
+        "id": "e4",
+        "source": "n-claim1",
+        "target": "n-compare1"
+      },
+      {
+        "id": "e5",
+        "source": "n-claim1",
+        "target": "n-premise1"
+      },
+      {
+        "id": "e6",
+        "source": "n-stance",
+        "target": "n-crowd"
+      },
+      {
+        "id": "e7",
+        "source": "n-crowd",
+        "target": "n-claim2"
+      },
+      {
+        "id": "e8",
+        "source": "n-claim2",
+        "target": "n-ev2"
+      },
+      {
+        "id": "e9",
+        "source": "n-stance",
+        "target": "n-claim3"
+      },
+      {
+        "id": "e10",
+        "source": "n-stance",
+        "target": "n-value"
+      },
+      {
+        "id": "edge-feba15eb-735e-4c99-9191-90864e1da2e2",
+        "source": "n-claim3",
+        "target": "node-92ccee6d-b625-4dd2-9482-e3649804307b"
+      }
+    ],
+    "createdAt": "2026-10-22T01:03:52.002Z",
+    "updatedAt": "2026-10-22T01:51:07.303Z"
+  },
+  "attackDefenseBoxes": [
+    {
+      "id": "box-n-claim1",
+      "nodeId": "n-claim1",
+      "projectId": "project-demo-ai",
+      "attacks": [
+        {
+          "id": "a1",
+          "type": "factual",
+          "content": "你方数据只是相关性，不能证明因果",
+          "threatLevel": 4,
+          "defenseStrategy": "补充机制链条 + 说明样本口径，把相关性论证降级为辅助证据"
+        },
+        {
+          "id": "a2",
+          "type": "logical",
+          "content": "总量增加不等于分配改善，普通人可能更惨",
+          "threatLevel": 5,
+          "defenseStrategy": "承认分配是制度问题，但指出总量不增加时再分配只能零和，总量是前提"
+        },
+        {
+          "id": "a3",
+          "type": "value",
+          "content": "效率不是终极价值，人的尊严更重要",
+          "threatLevel": 2,
+          "defenseStrategy": "效率不是目的而是手段，服务于福祉与选择自由"
+        }
+      ],
+      "summary": "最危险的是分配问题；最有效的防守是「总量是再分配的物质前提」。",
+      "mockNotes": "模辩中被追问「总量增加凭什么等于福祉增加」三次，需要把再分配机制讲具体。",
+      "linkedEvidenceIds": [],
+      "createdAt": "2026-10-22T01:03:52.002Z",
+      "updatedAt": "2026-10-22T01:03:52.002Z"
+    },
+    {
+      "id": "box-n-claim2",
+      "nodeId": "n-claim2",
+      "projectId": "project-demo-ai",
+      "attacks": [
+        {
+          "id": "a4",
+          "type": "factual",
+          "content": "开源扩散不等于普通人用得上",
+          "threatLevel": 4,
+          "defenseStrategy": "强调成本下降是扩散的机制，历史上电力与互联网同样经历集中到扩散"
+        },
+        {
+          "id": "a5",
+          "type": "logical",
+          "content": "服务门槛下降但质量下降，穷人只能获得劣质服务",
+          "threatLevel": 3,
+          "defenseStrategy": "人机协作可提升质量下限，监管可设定最低标准"
+        }
+      ],
+      "linkedEvidenceIds": [],
+      "createdAt": "2026-10-22T01:03:52.002Z",
+      "updatedAt": "2026-10-22T01:03:52.002Z"
+    },
+    {
+      "id": "box-n-claim3",
+      "nodeId": "n-claim3",
+      "projectId": "project-demo-ai",
+      "attacks": [
+        {
+          "id": "a6",
+          "type": "logical",
+          "content": "治理永远滞后于能力扩张，滞后期间的风险由谁承担",
+          "threatLevel": 5,
+          "defenseStrategy": "指出这是治理节奏问题，不构成技术否决理由；同时承认需要前置监管"
+        },
+        {
+          "id": "a7",
+          "type": "value",
+          "content": "不可逆风险意味着不能拿全人类做实验",
+          "threatLevel": 5,
+          "defenseStrategy": "区分可逆与不可逆风险，主张对不可逆环节设置前置闸门，而非全面停止"
+        }
+      ],
+      "linkedEvidenceIds": [],
+      "createdAt": "2026-10-22T01:03:52.002Z",
+      "updatedAt": "2026-10-22T01:03:52.002Z"
+    }
+  ],
+  "nodeEvidenceLinks": [
+    {
+      "id": "l1",
+      "nodeId": "n-ev1",
+      "projectId": "project-demo-ai",
+      "evidenceCardId": "card-mfg",
+      "note": "核心数据",
+      "createdAt": "2026-10-22T01:03:52.002Z"
+    },
+    {
+      "id": "l2",
+      "nodeId": "n-ev2",
+      "projectId": "project-demo-ai",
+      "evidenceCardId": "card-open",
+      "note": "扩散证据",
+      "createdAt": "2026-10-22T01:03:52.002Z"
+    },
+    {
+      "id": "l3",
+      "nodeId": "n-claim3",
+      "projectId": "project-demo-ai",
+      "evidenceCardId": "card-gov",
+      "note": "治理论证",
+      "createdAt": "2026-10-22T01:03:52.002Z"
+    },
+    {
+      "id": "l4",
+      "nodeId": "n-premise1",
+      "projectId": "project-demo-ai",
+      "evidenceCardId": "card-jobs",
+      "note": "对方证据，也可引用其口径",
+      "createdAt": "2026-10-22T01:03:52.002Z"
+    }
+  ],
+  "evidenceCards": [
+    {
+      "id": "card-mfg",
+      "title": "制造业自动化观察（示例来源）",
+      "content": "采用自动化产线的企业单位工时产出提升 12%",
+      "originalText": "单位工时产出平均提升 12%",
+      "type": "data",
+      "credibility": 4,
+      "timeliness": "2024",
+      "tags": [
+        "生产率",
+        "制造业"
+      ],
+      "applicableSide": "pro",
+      "counterWarning": "相关性不等于因果：高生产率企业可能更有能力投资自动化",
+      "status": "approved",
+      "useCount": 1,
+      "source": "示例研究院",
+      "year": "2024",
+      "createdAt": "2026-10-22T01:03:52.002Z",
+      "updatedAt": "2026-10-22T01:03:52.002Z"
+    },
+    {
+      "id": "card-open",
+      "title": "开源模型扩散（示例来源）",
+      "content": "开源模型下载量一年增长超过 10 倍，推理成本下降约两个数量级",
+      "originalText": "单位推理成本下降约两个数量级",
+      "type": "data",
+      "credibility": 4,
+      "timeliness": "2025",
+      "tags": [
+        "开源",
+        "成本"
+      ],
+      "applicableSide": "pro",
+      "counterWarning": "下载量不等于实际部署量",
+      "status": "approved",
+      "useCount": 1,
+      "source": "示例数据组",
+      "year": "2025",
+      "createdAt": "2026-10-22T01:03:52.002Z",
+      "updatedAt": "2026-10-22T01:03:52.002Z"
+    },
+    {
+      "id": "card-jobs",
+      "title": "低技能岗位占比下降（示例来源）",
+      "content": "低技能岗位占比五年下降 8 个百分点",
+      "originalText": "低技能岗位占比五年下降 8 个百分点",
+      "type": "data",
+      "credibility": 4,
+      "timeliness": "2024",
+      "tags": [
+        "就业"
+      ],
+      "applicableSide": "con",
+      "counterWarning": "岗位占比变化可能来自产业升级等多种原因",
+      "status": "approved",
+      "useCount": 1,
+      "source": "示例统计局",
+      "year": "2024",
+      "createdAt": "2026-10-22T01:03:52.002Z",
+      "updatedAt": "2026-10-22T01:03:52.002Z"
+    },
+    {
+      "id": "card-gov",
+      "title": "治理工具同样来自技术",
+      "content": "模型审计、内容溯源、算力监控等技术手段由技术进步本身提供",
+      "originalText": "审计与溯源能力随模型能力同步提升",
+      "type": "data",
+      "credibility": 4,
+      "timeliness": "2025",
+      "tags": [
+        "治理"
+      ],
+      "applicableSide": "pro",
+      "counterWarning": "治理滞后于能力扩张",
+      "status": "approved",
+      "useCount": 1,
+      "source": "机制论证",
+      "year": "2025",
+      "createdAt": "2026-10-22T01:03:52.002Z",
+      "updatedAt": "2026-10-22T01:03:52.002Z"
+    }
+  ],
+  "manuscripts": [
+    {
+      "id": "manuscript-e032b515-d486-4bec-8b93-11b70c1093c3",
+      "projectId": "project-demo-ai",
+      "title": "一辩稿·人工智能的发展利大于弊",
+      "fileName": "opening.md",
+      "fileType": "generated",
+      "content": "# 一辩稿 · 人工智能的发展利大于弊（正方）\n\n> 由论证树、证据卡与拆题结果自动组装；〔待补〕处需要补写。\n\n## 问候与立场声明\n\nAI 扩展了人类解决问题的能力，且这种扩展可治理，因此整体净收益为正。\n\n## 定义\n\n- **人工智能**：以机器学习为核心、能在有限监督下完成认知型任务的自主决策技术集合\n- **利大于弊**：在可预见的时间尺度上，人类整体福祉净增加为正，且不引入不可逆灾难\n\n## 裁判标准\n\n- 整体福祉净变化：我方主张 收益大于代价，且代价可通过制度修正\n- 机会平等：我方主张 服务边际成本下降扩大可及性\n\n## 论点1：AI 提升生产效率，扩大可分配总量\n\n**机制**：自动化替代重复劳动 → 单位工时产出上升 → 同等投入获得更多产出 → 社会可分配总量增加 → 再分配具备物质前提。\n\n**证据**：〔待补〕\n\n**预判并回应**：\n\n- 对方可能说：你方数据只是相关性，不能证明因果。我方回应：补充机制链条 + 说明样本口径，把相关性论证降级为辅助证据\n- 对方可能说：总量增加不等于分配改善，普通人可能更惨。我方回应：承认分配是制度问题，但指出总量不增加时再分配只能零和，总量是前提\n- 对方可能说：效率不是终极价值，人的尊严更重要。我方回应：效率不是目的而是手段，服务于福祉与选择自由\n\n**比较**：对方只能在分配层面争论；总量不增加时再分配只能零和，总量增加是任何再分配的前提。\n\n## 论点2：AI 降低专业服务门槛，扩大机会\n\n**机制**：模型与推理成本下降 → 教育医疗咨询边际成本下降 → 低收入群体获得服务比例上升 → 能力差距收窄。\n\n**证据**：〔待补〕\n\n**预判并回应**：\n\n- 对方可能说：开源扩散不等于普通人用得上。我方回应：强调成本下降是扩散的机制，历史上电力与互联网同样经历集中到扩散\n- 对方可能说：服务门槛下降但质量下降，穷人只能获得劣质服务。我方回应：人机协作可提升质量下限，监管可设定最低标准\n\n## 论点3：风险来自滥用与失范，属于治理问题\n\n**机制**：风险与治理是同一技术能力的两面：更强的模型同样带来更强的检测与审计手段。\n\n**证据**：\n\n- [card-gov] 「审计与溯源能力随模型能力同步提升」——治理工具同样来自技术（机制论证，2025）（治理论证）\n\n**预判并回应**：\n\n- 对方可能说：治理永远滞后于能力扩张，滞后期间的风险由谁承担。我方回应：指出这是治理节奏问题，不构成技术否决理由；同时承认需要前置监管\n- 对方可能说：不可逆风险意味着不能拿全人类做实验。我方回应：区分可逆与不可逆风险，主张对不可逆环节设置前置闸门，而非全面停止\n\n## 价值升华\n\n真正的公平不是让所有人停在原地，而是让更多人有向上流动的机会。\n",
+      "fileSize": 3107,
+      "createdAt": "2026-10-22T01:03:52.033Z",
+      "updatedAt": "2026-10-22T01:03:52.033Z"
+    }
+  ],
+  "aiQuestions": [],
+  "aiEvaluations": [
+    {
+      "id": "eval-demo",
+      "projectId": "project-demo-ai",
+      "logic": 82,
+      "evidence": 68,
+      "persuasiveness": 76,
+      "innovation": 64,
+      "counterResilience": 78,
+      "overall": 74,
+      "suggestions": [
+        "再补一张「再分配可行」的数据卡",
+        "把论点三的机制写得更具体",
+        "准备一个关于不可逆风险的反向归谬"
+      ],
+      "priorityFixes": [
+        {
+          "problem": "分配问题防守依赖制度假设",
+          "whyItLoses": "对方可主张制度不可信",
+          "fixNow": "补一条历史上再分配成功的案例"
+        }
+      ],
+      "judgeQuestions": [
+        "总量增加能证明福祉增加吗？",
+        "谁来承担转换成本？"
+      ],
+      "createdAt": "2026-10-22T01:03:52.002Z"
+    }
+  ],
+  "decompositionResults": [
+    {
+      "id": "decomp-demo",
+      "projectId": "project-demo-ai",
+      "judgeQuestion": "整体福祉的净变化，还是不可逆风险的红线？",
+      "motionType": "事实判断 + 价值比较",
+      "coreConcepts": [
+        {
+          "term": "人工智能",
+          "literalDefinition": "机器模拟人类认知功能的技术集合",
+          "possibleInterpretations": [
+            "弱 AI",
+            "通用 AI",
+            "具备自主目的的系统"
+          ],
+          "suggestedDefinition": "以机器学习为核心、能在有限监督下完成认知型任务的自主决策技术集合",
+          "counterDefinition": "具备自我意识与独立目的的系统"
+        },
+        {
+          "term": "利大于弊",
+          "literalDefinition": "收益超过代价",
+          "possibleInterpretations": [
+            "短期收益",
+            "长期净收益"
+          ],
+          "suggestedDefinition": "在可预见的时间尺度上，人类整体福祉净增加为正，且不引入不可逆灾难",
+          "counterDefinition": "任何不可逆风险都足以否定整体收益"
+        }
+      ],
+      "controversialPoints": [
+        {
+          "issue": "效率红利能否覆盖结构性代价",
+          "proView": "总量增加为再分配提供前提",
+          "conView": "收益被资本攫取、代价由底层承担",
+          "keyBattle": "比较口径：总量 vs 分配"
+        },
+        {
+          "issue": "风险是技术属性还是治理问题",
+          "proView": "风险来自滥用，治理能力同样来自技术",
+          "conView": "能力不对等导致治理永远滞后",
+          "keyBattle": "举证责任：谁来证明可治理"
+        }
+      ],
+      "battlefields": [
+        {
+          "battlefield": "就业与分配",
+          "whyItMatters": "最贴近评委直觉，双方都必须正面回应",
+          "ourPush": "净岗位与总量增加",
+          "opponentPush": "转换成本与结构性失业",
+          "priority": "high"
+        },
+        {
+          "battlefield": "能力集中",
+          "whyItMatters": "反方最锋利的结构性攻击",
+          "ourPush": "开源扩散、成本下降",
+          "opponentPush": "算力与数据垄断",
+          "priority": "high"
+        },
+        {
+          "battlefield": "不可逆风险",
+          "whyItMatters": "决定上限：一旦承认不可逆，保守原则对我方不利",
+          "ourPush": "风险可被技术手段检测与约束",
+          "opponentPush": "尾部风险不可挽回",
+          "priority": "medium"
+        }
+      ],
+      "comparisonFramework": {
+        "overallPlatform": "不是拿 AI 与乌托邦比，而是与「没有 AI 的现实」比",
+        "criteria": [
+          {
+            "dimension": "整体福祉净变化",
+            "ourStandard": "收益大于代价，且代价可通过制度修正",
+            "opponentStandard": "只要存在不可逆风险即净负",
+            "judgeShortcut": "看谁给出可比较的口径"
+          },
+          {
+            "dimension": "机会平等",
+            "ourStandard": "服务边际成本下降扩大可及性",
+            "opponentStandard": "能力差距被技术放大",
+            "judgeShortcut": "看底层群体的绝对处境"
+          }
+        ],
+        "clashComparisons": [
+          {
+            "clash": "效率 vs 公平",
+            "compareBy": "总量是否增加",
+            "ourEdge": "总量增加使再分配成为可能",
+            "watchout": "不要承认分配自动改善"
+          }
+        ]
+      },
+      "hiddenPremises": [
+        {
+          "premise": "技术发展总体可治理",
+          "explanation": "若不可治理，利弊比较失去意义",
+          "howToUse": "承认治理滞后，但主张这是治理问题而非技术否决理由"
+        },
+        {
+          "premise": "效率收益可以被再分配",
+          "explanation": "若收益完全被少数主体攫取，总量增加不等于福祉增加",
+          "howToUse": "指出再分配是制度变量，历史上通用技术都经历扩散"
+        }
+      ],
+      "argumentPaths": [
+        {
+          "side": "pro",
+          "mainClaim": "效率红利 + 治理可控",
+          "supportingPoints": [
+            "生产率与总量提升",
+            "服务门槛下降扩大可及性",
+            "治理工具本身来自技术进步"
+          ]
+        },
+        {
+          "side": "con",
+          "mainClaim": "结构性失业 + 能力垄断 + 生存风险",
+          "supportingPoints": [
+            "低技能岗位被压缩",
+            "算力数据集中于少数主体",
+            "尾部风险不可逆"
+          ]
+        }
+      ],
+      "rebuttalTargets": [
+        {
+          "target": "结构性失业",
+          "attackPath": "转换成本由底层承担",
+          "watchout": "不要否认岗位消失，只争总量与转换速度"
+        },
+        {
+          "target": "不可逆风险",
+          "attackPath": "尾部风险一旦发生无法挽回",
+          "watchout": "不要承诺零风险，主张可治理与可控"
+        }
+      ],
+      "prepChecklist": [
+        "证据卡 ≥5 张并挂到论点",
+        "每个论点覆盖事实/逻辑/价值三类预判",
+        "高威胁攻击全部写防守策略",
+        "一辩稿与驳论清单各出一版"
+      ],
+      "createdAt": "2026-10-22T01:03:52.002Z"
+    }
+  ]
+}

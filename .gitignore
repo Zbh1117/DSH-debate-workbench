@@ -1,0 +1,27 @@
+# 辩论工作台运行时数据（每台机器/每个工作区自动生成，不入库）
+.debate/
+export/
+
+# 例外：保留 example 演示数据（想删掉演示数据时，把下面两行换成 `.debate/` 即可）
+!example/.debate/
+!example/.debate/**
+
+# 依赖与构建产物
+node_modules/
+dist/
+lib/*.d.ts
+
+# 临时文件 / 备份（原子写残留、手工备份）
+*.tmp-*
+*.bak
+*.bak-*
+*.moved-*.bak
+*.log
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.sw?

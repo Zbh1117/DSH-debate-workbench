@@ -1,0 +1,35 @@
+name: publish
+
+# 打 tag 即发布到 npm：git tag v0.6.0 && git push origin v0.6.0
+# 需要在仓库 Settings → Secrets 里配置 NPM_TOKEN（npm 账号的 Automation Token）
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # provenance
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      # 插件零运行时依赖，四套自测直接跑（不依赖 DSH 运行时）
+      - name: Run tests
+        run: |
+          node tests/apply.test.mjs
+          node tests/logic.test.mjs
+          node tests/api.test.mjs
+          node tests/client.test.mjs
+
+      - name: Publish to npm
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

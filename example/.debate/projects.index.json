@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "activeProjectId": "project-demo-ai",
+  "projects": [
+    {
+      "id": "project-demo-ai",
+      "dir": "projects/project-demo-ai",
+      "topic": "人工智能的发展利大于弊",
+      "side": "pro",
+      "format": "chinese",
+      "createdAt": "2026-10-22T01:03:52.002Z",
+      "updatedAt": "2026-10-22T01:51:07.303Z",
+      "archived": false
+    },
+    {
+      "id": "p-mvjgvioe-5t9t",
+      "dir": "projects/p-mvjgvioe-5t9t",
+      "topic": "强调主体性是当代年轻人的精神出路/精神歧途",
+      "side": "pro",
+      "format": "chinese",
+      "createdAt": "2026-10-22T11:37:44.270Z",
+      "updatedAt": "2026-10-22T11:37:44.270Z",
+      "archived": false
+    }
+  ],
+  "updatedAt": "2026-10-22T11:38:07.249Z"
+}

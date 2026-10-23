@@ -1,0 +1,65 @@
+{
+  "name": "dsh-debate-workbench",
+  "version": "0.6.0",
+  "description": "辩论备赛工作台：复用 DebateWeaver 的论证树/证据卡/攻防框/五维评估模型，在 DSH 里提供工具、API 与原生右栏工作台界面",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./assets/client.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "lib",
+    "assets",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "docs"
+  ],
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "test": "node tests/apply.test.mjs && node tests/logic.test.mjs && node tests/api.test.mjs && node tests/client.test.mjs",
+    "test:apply": "node tests/apply.test.mjs",
+    "test:logic": "node tests/logic.test.mjs",
+    "test:api": "node tests/api.test.mjs",
+    "test:client": "node tests/client.test.mjs"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "debate",
+    "辩论",
+    "备赛",
+    "debateweaver",
+    "mcp",
+    "argument-tree"
+  ],
+  "author": "Zbh1117",
+  "license": "MIT",
+  "homepage": "https://github.com/Zbh1117/DSH-debate-workbench#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zbh1117/DSH-debate-workbench.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Zbh1117/DSH-debate-workbench/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": []
+    }
+  }
+}

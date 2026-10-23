@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>辩论备赛工作台 · 调试页</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #14161f;
+        --card: #1c1f2b;
+        --line: rgba(150, 165, 220, 0.18);
+        --text: #e8ebf5;
+        --muted: #99a1bd;
+        --accent: #7c8cff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 20px;
+        background: var(--bg);
+        color: var(--text);
+        font: 14px/1.6 system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      }
+      h1 { font-size: 16px; margin: 0 0 4px; }
+      .sub { color: var(--muted); font-size: 12.5px; margin-bottom: 16px; }
+      .card {
+        border: 1px solid var(--line);
+        background: var(--card);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+      }
+      .row { display: flex; gap: 18px; flex-wrap: wrap; }
+      .kv { display: grid; grid-template-columns: 92px 1fr; gap: 4px 10px; font-size: 13px; }
+      .kv dt { color: var(--muted); }
+      .kv dd { margin: 0; }
+      .bar { height: 8px; border-radius: 999px; background: rgba(124, 140, 255, 0.16); overflow: hidden; }
+      .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #7c8cff, #b07cff); }
+      .dim { display: grid; grid-template-columns: 84px 1fr 40px; gap: 8px; align-items: center; font-size: 12.5px; color: var(--muted); }
+      ul { margin: 6px 0 0; padding-left: 18px; }
+      li { margin: 2px 0; }
+      li.error { color: #ff8497; }
+      li.warn { color: #f2c14e; }
+      code { background: rgba(124, 140, 255, 0.14); padding: 0 4px; border-radius: 4px; }
+      .empty { color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <h1>辩论备赛工作台 · 调试页</h1>
+    <div class="sub">
+      这是 Host 侧只读调试页，用来确认数据链路是否通。正式界面将由 DSH 客户端插件提供（中间栏上下分拆）。<br />
+      接口：<code>/debate-api/ui</code> · <code>/debate-api/state</code> · <code>/debate-api/bundle</code> ·
+      <code>POST /debate-api/tool</code> · <code>GET /debate-api/export</code>
+    </div>
+    <div id="root" class="empty">加载中…</div>
+    <script type="module">
+      const root = document.getElementById('root')
+      const esc = value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]))
+      const bars = scores =>
+        [
+          ['逻辑性', scores?.logic],
+          ['证据力', scores?.evidence],
+          ['说服力', scores?.persuasiveness],
+          ['创新性', scores?.innovation],
+          ['抗反驳', scores?.counterResilience],
+        ]
+          .map(
+            ([label, value]) =>
+              `<div class="dim"><span>${label}</span><div class="bar"><i style="width:${Number(value ?? 0)}%"></i></div><span>${Number(value ?? 0)}</span></div>`,
+          )
+          .join('')
+
+      try {
+        const response = await fetch('/debate-api/state')
+        const payload = await response.json()
+        if (payload.ok !== true) throw new Error(payload.error ?? 'HTTP ' + response.status)
+        if (payload.snapshot?.active !== true) {
+          root.className = 'card empty'
+          root.textContent = '当前没有激活的辩论项目。在对话里说「开始备赛：<辩题>，我方持正」让模型建立项目后再刷新。'
+        } else {
+          const project = payload.project ?? {}
+          const analysis = payload.analysis ?? {}
+          const gaps = (analysis.gaps ?? []).filter(item => item.level !== 'info')
+          root.className = ''
+          root.innerHTML = `
+            <div class="card">
+              <div class="kv">
+                <dt>辩题</dt><dd><b>${esc(project.title)}</b>（${project.side === 'pro' ? '正方' : '反方'}）</dd>
+                <dt>工作区</dt><dd><code>${esc(payload.snapshot.workspace)}</code></dd>
+                <dt>就绪度</dt><dd>${Number(analysis.readiness ?? 0)}/100（阻塞缺口 ${Number(analysis.blocking ?? 0)} 项）</dd>
+                <dt>规模</dt><dd>节点 ${Number(analysis.stats?.tree?.total ?? 0)} · 证据 ${Number(analysis.stats?.evidence?.cards ?? 0)} 张 · 攻防框 ${Number(analysis.stats?.attack?.boxes ?? 0)} 个</dd>
+                <dt>界面</dt><dd>${payload.snapshot.ui?.open ? '已展开' : '已收起'} · ${payload.snapshot.ui?.orientation === 'horizontal' ? '左右' : '上下'} ${Math.round((payload.snapshot.ui?.ratio ?? 0.5) * 100)}%</dd>
+              </div>
+            </div>
+            <div class="card"><div class="row" style="flex:1">${bars(analysis.scores)}</div></div>
+            <div class="card"><b>最该补的缺口</b>${
+              gaps.length === 0 ? '<div class="empty">没有必须补或建议补的缺口。</div>' : `<ul>${gaps.map(item => `<li class="${esc(item.level)}">${esc(item.message)}</li>`).join('')}</ul>`
+            }</div>
+          `
+        }
+      } catch (error) {
+        root.className = 'card'
+        root.textContent = `加载失败：${error.message}`
+      }
+    </script>
+  </body>
+</html>

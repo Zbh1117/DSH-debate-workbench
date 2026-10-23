@@ -1,0 +1,30 @@
+{
+  "format": "debateweaver-project",
+  "version": 1,
+  "exportedAt": "2026-10-22T11:37:44.270Z",
+  "project": {
+    "id": "p-mvjgvioe-5t9t",
+    "title": "强调主体性是当代年轻人的精神出路/精神歧途",
+    "side": "pro",
+    "format": "chinese",
+    "status": "active",
+    "createdAt": "2026-10-22T11:37:44.270Z",
+    "updatedAt": "2026-10-22T11:37:44.270Z",
+    "argumentTreeId": "tree-0edb1d32-9692-48a3-9e78-a0823f73ea2c"
+  },
+  "argumentTree": {
+    "id": "tree-0edb1d32-9692-48a3-9e78-a0823f73ea2c",
+    "projectId": "p-mvjgvioe-5t9t",
+    "nodes": [],
+    "edges": [],
+    "createdAt": "2026-10-22T11:37:44.270Z",
+    "updatedAt": "2026-10-22T11:37:44.270Z"
+  },
+  "attackDefenseBoxes": [],
+  "nodeEvidenceLinks": [],
+  "evidenceCards": [],
+  "manuscripts": [],
+  "aiQuestions": [],
+  "aiEvaluations": [],
+  "decompositionResults": []
+}
