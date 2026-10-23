@@ -1,18 +1,27 @@
 name: publish
 
-# 打 tag 即发布到 npm：git tag v0.6.0 && git push origin v0.6.0
-# 需要在仓库 Settings → Secrets 里配置 NPM_TOKEN（npm 账号的 Automation Token）
+# 手动触发发布：GitHub → Actions → publish → Run workflow
+#
+# 前置条件（只配一次）：
+#   仓库 Settings → Secrets and variables → Actions → New repository secret
+#   名称：NPM_TOKEN
+#   值：npm 网站生成的 Granular Access Token（Permissions: Packages = Read and write，
+#       勾选 Bypass 2FA；建议 90 天或按需过期）
+#
+# 说明：当前 tag 触发已关闭，避免没有 NPM_TOKEN 时打 tag 产生失败记录。
+#      配好 secret 后，如需「打 tag 自动发版」，取消下面 push.tags 的注释即可。
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+  # push:
+  #   tags:
+  #     - 'v*'
 
 jobs:
   test-and-publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # provenance
+      id-token: write # npm provenance
     steps:
       - uses: actions/checkout@v4
 
@@ -20,6 +29,15 @@ jobs:
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Check NPM_TOKEN secret
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::缺少 NPM_TOKEN secret，请到仓库 Settings → Secrets and variables → Actions 配置"
+            exit 1
+          fi
 
       # 插件零运行时依赖，四套自测直接跑（不依赖 DSH 运行时）
       - name: Run tests
