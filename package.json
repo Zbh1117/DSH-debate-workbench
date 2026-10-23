@@ -20,7 +20,8 @@
     "docs"
   ],
   "engines": {
-    "node": ">=22.19.0"
+    "node": ">=22.19.0",
+    "dsh": ">=0.2.0-0"
   },
   "scripts": {
     "test": "node tests/apply.test.mjs && node tests/logic.test.mjs && node tests/api.test.mjs && node tests/client.test.mjs",
@@ -32,6 +33,7 @@
   "keywords": [
     "dsh",
     "deepseek-harness",
+    "dsh-plugin",
     "plugin",
     "debate",
     "辩论",
@@ -54,6 +56,7 @@
     "access": "public"
   },
   "dsh": {
+    "manifestVersion": 1,
     "bundle": {
       "patch": "./cordis.patch.yml"
     },

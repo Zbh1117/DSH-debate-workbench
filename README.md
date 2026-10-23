@@ -42,10 +42,28 @@
 
 ## 安装
 
-### 方式一：npm（推荐）
+### 方式零：DSH 桌面版内置安装（推荐，无需命令行）
+
+前提：已安装 DSH 桌面版（自带「插件」面板与插件管理器）。
+
+1. 打开侧栏 **「插件」** 面板（标题「插件」，说明「安装、启用和配置插件」）
+2. 点 **「添加插件」**
+3. 在「包名或地址」里输入：
+   ```
+   dsh-debate-workbench
+   ```
+   （也支持带版本 `dsh-debate-workbench@0.6.0`、GitHub 仓库地址或本地目录路径；安装源会自动在 npmjs / npmmirror 之间选择，失败可切换国内镜像）
+4. 等待 pnpm 安装完成（包零依赖，很快）
+5. **重启 DSH**（面板会提示"更改将在下次启动生效"）
+6. 重启后右栏出现「辩论工作台」标签页；也可以按 `Ctrl+Shift+D` 打开
+
+> 同一面板也装了官方插件；卸载/升级都在这里：**卸载后重新「添加插件」新版本**（面板没有单独的版本选择器）。
+> 命令行的等价写法（DSH 自带 CLI）：`dsh plugin add dsh-debate-workbench`。
+
+### 方式一：npm + 工具安装
 
 ```bash
-npm i dsh-debate-workbench   # 或全局
+npm i dsh-debate-workbench
 ```
 
 然后在 DSH 里安装 bundle（把包名或本地路径传给 `plugin_manager`）：
