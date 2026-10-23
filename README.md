@@ -58,12 +58,31 @@
 6. 重启后右栏出现「辩论工作台」标签页；也可以按 `Ctrl+Shift+D` 打开
 
 > 同一面板也装了官方插件；卸载/升级都在这里：**卸载后重新「添加插件」新版本**（面板没有单独的版本选择器）。
-> 命令行的等价写法（DSH 自带 CLI）：`dsh plugin add dsh-debate-workbench`。
+>
+> 命令行的等价写法（DSH 自带 CLI，二选一；profile 名按你的安装填，桌面版通常为 `desktop`，Web 版为 `web`）：
+>
+> ```bash
+> dsh plugin --profile web add dsh-debate-workbench
+> dsh plugin add dsh-debate-workbench
+> ```
 >
 > **大陆用户提示**：直接用 npm 包名安装即可。DSH 插件管理器会自动在 npmjs 与 npmmirror（淘宝镜像）之间选择最快源，
 > npmmirror 会自动同步本包（发布后几分钟内），**无需做任何额外上传**；本包零依赖，只下载一个 tarball，安装通常 1 秒内完成。
 > 若对话框提示网络失败，可切换/手动选择「国内镜像」后重试。**不建议用 GitHub 地址安装**（大陆访问 GitHub 可能不稳定），
 > 需要源码请用 npm 安装后的 `node_modules/dsh-debate-workbench`，或等镜像同步。
+
+### 插件市场收录信息（供审核/用户评估）
+
+- **一句话价值**：在 DSH 右侧栏获得一个与对话联动的辩论备赛工作台——论证树、拆题、证据库、攻防、五维评估、稿件全部结构化，模型可用 14 个工具直接读写。
+- **能力分类**：工具与能力（同时含界面与体验）
+- **安装命令**：`dsh plugin --profile web add dsh-debate-workbench`（profile 名按实际填，桌面版为 `desktop`）
+- **兼容性**：在 DSH `0.2.0-rc.2` 桌面版验证；Windows / macOS / Linux（纯 Node + 浏览器端插件，无原生依赖）
+- **许可证**：MIT
+- **权限与外部服务**：
+  - 读写当前工作区的 `.debate/` 目录（题目、证据、待办、界面状态），不触碰其它文件
+  - 模型辅助功能调用**宿主内置模型**（DSH 的 `llm` 服务），不额外请求第三方 API、不需要用户填 key
+  - 可选 MCP 外部检索由用户在 DSH profile 自行配置，插件本身不联网
+- **已知限制**：客户端右栏 API 变更需适配；Host 代码/客户端加载器改动后需重启 DSH；未实现连线鼠标绘制、证据评分编辑、模辩对战
 
 ### 方式一：npm + 工具安装
 
