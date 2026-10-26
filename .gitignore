@@ -6,6 +6,10 @@ export/
 !example/.debate/
 !example/.debate/**
 
+# 复盘录音：体积大、隐私敏感，即使演示数据也不入库
+**/recordings/
+example/.debate/**/recordings/
+
 # 依赖与构建产物
 node_modules/
 dist/
