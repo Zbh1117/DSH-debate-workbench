@@ -49,7 +49,7 @@ check('导出 name / inject / apply', typeof name === 'string' && Array.isArray(
 
 const normal = makeCtx({ webServer: fakeWebServer })
 apply(normal.ctx)
-check('注册 14 个工具', normal.tools.size === 14, [...normal.tools.keys()].join(','))
+check('注册 15 个工具', normal.tools.size === 15, [...normal.tools.keys()].join(','))
 check('注入系统提示段', normal.sections.length === 1 && normal.sections[0].name === 'debate-workbench:workflow', JSON.stringify(normal.sections.map(item => item.name)))
 check('系统提示包含关键工具名', normal.sections[0].text.includes('debate_project') && normal.sections[0].text.includes('debate_workbench'))
 
@@ -62,7 +62,7 @@ try {
   console.log(`       ${String(error)}`)
 }
 check('headless 下不抛错', headlessThrew === false)
-check('headless 下工具仍注册', headless.tools.size === 14)
+check('headless 下工具仍注册', headless.tools.size === 15)
 
 const noPrompt = makeCtx({ webServer: fakeWebServer, systemPrompt: undefined })
 let promptThrew = false
@@ -71,7 +71,7 @@ try {
 } catch {
   promptThrew = true
 }
-check('systemPrompt 缺失时降级', promptThrew === false && noPrompt.tools.size === 14)
+check('systemPrompt 缺失时降级', promptThrew === false && noPrompt.tools.size === 15)
 
 const broken = makeCtx({
   webServer: {
@@ -88,7 +88,7 @@ try {
 } catch {
   brokenThrew = true
 }
-check('API 挂载失败不影响加载', brokenThrew === false && broken.tools.size === 14)
+check('API 挂载失败不影响加载', brokenThrew === false && broken.tools.size === 15)
 
 console.log(`\n${failures === 0 ? '全部通过' : `${failures} 项失败`}`)
 if (failures > 0) process.exitCode = 1

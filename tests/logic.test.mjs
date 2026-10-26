@@ -96,7 +96,7 @@ function check(label, condition, detail) {
 }
 
 console.log(`workspace = ${workspace}`)
-check('注册 14 个工具', definitions.size === 14, [...definitions.keys()].join(','))
+check('注册 15 个工具', definitions.size === 15, [...definitions.keys()].join(','))
 
 /* 1. 建项目 */
 const created = await call('debate_project', { action: 'create', topic: '人工智能的发展利大于弊', side: '正', format: 'chinese' })
@@ -362,6 +362,64 @@ check(
   fs.existsSync(path.join(workspace, '.debate', 'shared', 'evidence.json')) && !fs.existsSync(path.join(otherWorkspace, '.debate', 'shared', 'evidence.json')),
   JSON.stringify({ otherWorkspace }),
 )
+
+/* 14. 比赛复盘（M1/M2）：sidecar 数据 + 工具层 */
+const reviewAudio = path.join(workspace, 'fake-match.m4a')
+fs.writeFileSync(reviewAudio, Buffer.alloc(2048, 7))
+const reviewCreated = await call('debate_review', {
+  action: 'create',
+  title: '对XX大学模辩',
+  date: '2030-01-02',
+  opponent: 'XX大学',
+  ourSide: 'pro',
+  audioPath: reviewAudio,
+  transcriptText: '正方立论：AI 提升生产率。反方质询：结构性失业如何解释？',
+})
+check('复盘可创建', typeof reviewCreated.reviewId === 'string' && reviewCreated.review.hasTranscript === true, JSON.stringify(reviewCreated.review))
+const reviewId = reviewCreated.reviewId
+const activeBundle = (await call('debate_project', { action: 'read' })).bundle
+const recordingAbs = path.join(workspace, '.debate', 'projects', activeBundle.project.id, 'recordings', `${reviewId}.m4a`)
+check('录音已复制进题目目录', fs.existsSync(recordingAbs) && fs.statSync(recordingAbs).size === 2048, recordingAbs)
+
+const reviewList = await call('debate_review', { action: 'list' })
+check('复盘列表可读', Array.isArray(reviewList.reviews) && reviewList.reviews.some(item => item.id === reviewId), JSON.stringify(reviewList.reviews))
+const reviewRead = await call('debate_review', { action: 'read', reviewId })
+check('复盘可读取且含转写', reviewRead.review.transcript.text.includes('结构性失业'), reviewRead.review.transcript.text)
+
+const reviewUpdated = await call('debate_review', {
+  action: 'update',
+  reviewId,
+  patch: {
+    judge: {
+      perspective: 'white-paper',
+      mode: 'votes',
+      winner: 'pro',
+      voteCount: '3:0',
+      votes: { impression: 'pro', phase: 'pro', decision: 'pro' },
+      reasons: { impression: '架构更完整', phase: '立论+3 / 质询-1', decision: '核心论证存活 3/5' },
+      argumentSurvival: [{ argument: '效率红利', side: 'pro', survived: true, afterClash: '未被有效回应' }],
+      decisiveClashes: [{ clash: '就业', judgedFor: 'pro', why: '反方无同口径数据' }],
+    },
+    overall: { verdict: '赢在架构', actionItems: ['补就业数据'] },
+  },
+})
+check('复盘可更新判比赛（三票制）', reviewUpdated.review.winner === 'pro' && reviewUpdated.review.voteCount === '3:0', JSON.stringify(reviewUpdated.review))
+
+const reviewExported = await call('debate_review', { action: 'export', reviewId })
+check(
+  '复盘可导出 Markdown',
+  fs.existsSync(reviewExported.path) && reviewExported.markdown.includes('印象票') && reviewExported.markdown.includes('对XX大学模辩'),
+  reviewExported.path,
+)
+const bundleAfterReview = (await call('debate_project', { action: 'read' })).bundle
+check(
+  '复盘不写入 ProjectExportBundle',
+  !('reviews' in bundleAfterReview) && !JSON.stringify(bundleAfterReview).includes('对XX大学模辩'),
+  JSON.stringify(Object.keys(bundleAfterReview)),
+)
+
+const reviewDeleted = await call('debate_review', { action: 'delete', reviewId })
+check('复盘可删除且清理录音', reviewDeleted.audioRemoved === true && !fs.existsSync(recordingAbs), JSON.stringify(reviewDeleted))
 
 console.log(`\n${failures === 0 ? '全部通过' : `${failures} 项失败`}`)
 console.log(`产物目录：${path.join(workspace, '.debate')}`)

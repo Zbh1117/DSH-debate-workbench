@@ -2,6 +2,13 @@
 
 本项目遵循语义化版本（`MAJOR.MINOR.PATCH`）。插件与 DSH 宿主版本解耦：插件版本独立发布，兼容性在 README 中标注。
 
+## 0.7.0-alpha.1（未发布 · 复盘 M1/M2 里程碑）
+
+- 新增 `debate_review` 工具（复盘 sidecar 数据层 + 工具层）：`create / list / read / update / delete / export`。
+- 复盘数据存于题目目录 `reviews/`（可版本管理）与 `recordings/`（录音，默认 gitignore 忽略），**不写入 `ProjectExportBundle`**，不影响 DebateWeaver 互通。
+- 判比赛采用**三票制**设计：印象票（整体架构比较）/ 环节票（按环节表现）/ 决胜票（论证留存度）；JSON 结构与 Markdown 渲染已就绪，AI 生成在 M4。
+- 设计文档 `docs/review-design.md`：判比赛 + 环节复盘、转写三条路线、评委 skill、证据候选流程、M1–M6 任务拆解与验收清单。
+
 ## 0.6.0
 
 - **修复**：工具默认工作区改为「全局指针里的激活工作区」优先，解决「工具写入 A 工作区、右栏界面读取 B 工作区」的数据错位（公共证据库为空的问题即由此引起）；`debate_library` 返回值新增 `workspace` / `libraryPath` 便于诊断。
