@@ -312,6 +312,15 @@ const api = {
     }),
   tool: () => Promise.resolve({ ok: true, result: {} }),
   ui: () => Promise.resolve({ ok: true }),
+  projects: () => Promise.resolve({ projects: [], activeProjectId: null }),
+  projectAction: () => Promise.resolve({ ok: true }),
+  library: () => Promise.resolve({ cards: [] }),
+  reviews: () => Promise.resolve({ reviews: [] }),
+  review: () => Promise.resolve({ review: null }),
+  reviewAudio: () => Promise.resolve({ ok: true }),
+  reviewJob: () => Promise.resolve({ job: { id: 'job-1', state: 'running' } }),
+  reviewJobStatus: () => Promise.resolve({ job: { id: 'job-1', state: 'done', message: '完成' } }),
+  reviewMarkdownUrl: () => '/debate-api/review-md?id=x',
   exportUrl: () => '/debate-api/export',
 }
 const stub = createReactStub()
@@ -331,7 +340,16 @@ const segTabs = topChildren
   .filter(child => child?.props?.className === 'dwb-seg')
   .flatMap(seg => (Array.isArray(seg.props.children) ? seg.props.children : [seg.props.children]))
   .filter(Boolean)
-check('顶部含 7 个标签按钮（分段控件内）', segTabs.filter(child => child?.props?.className === 'dwb-tabbtn').length === 7, JSON.stringify(segTabs.map(child => child?.props?.className)))
+check('顶部含 8 个标签按钮（分段控件内）', segTabs.filter(child => child?.props?.className === 'dwb-tabbtn').length === 8, JSON.stringify(segTabs.map(child => child?.props?.className)))
+// 切到「复盘」标签页：应能渲染出复盘面板（效果钩子在替身里不执行，只验证渲染路径）
+const reviewTabButton = segTabs.find(child => child?.props?.className === 'dwb-tabbtn' && child?.props?.children === '复盘')
+check('存在「复盘」标签按钮', reviewTabButton !== undefined, JSON.stringify(segTabs.map(child => child?.props?.children)))
+reviewTabButton?.props?.onClick?.()
+stub.reset()
+const reviewElement = Workbench({})
+const reviewText = JSON.stringify(reviewElement)
+check('复盘标签页可渲染', reviewText.includes('复盘记录') && reviewText.includes('新建复盘') && reviewText.includes('创建复盘') && reviewText.includes('还没有复盘'), reviewText.slice(0, 300))
+
 const foot = children.find(child => child?.props?.className === 'dwb-foot')
 check('底部状态栏存在', foot !== undefined)
 

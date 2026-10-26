@@ -159,6 +159,50 @@ check('client-report 可接收', reportResponse.status === 200 && reportResponse
 const reports = JSON.parse((await get('/debate-api/client-reports')).body)
 check('client-reports 可回读', reports.ok === true && reports.reports.length === 1 && reports.reports[0].stage === 'test', JSON.stringify(reports).slice(0, 300))
 
+/* 10. 复盘接口（列表/详情/Markdown/长任务/音频上传） */
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+const reviewCreated = await post('/debate-api/tool', {
+  name: 'debate_review',
+  args: { action: 'create', title: '接口复盘测试', transcriptText: '正方立论：AI 提升效率。反方：结构失业无法避免。', workspace },
+})
+const reviewId = reviewCreated.json?.result?.reviewId
+check('复盘可通过 /tool 创建', reviewCreated.status === 200 && typeof reviewId === 'string' && reviewId.startsWith('review-'), JSON.stringify(reviewCreated.json).slice(0, 300))
+
+const reviewList = await get('/debate-api/reviews?workspace=' + encodeURIComponent(workspace))
+const reviewListJson = JSON.parse(reviewList.body)
+check('复盘列表接口', reviewList.status === 200 && reviewListJson.reviews.some(item => item.id === reviewId), reviewList.body.slice(0, 300))
+
+const reviewDetail = await get('/debate-api/review?id=' + encodeURIComponent(reviewId) + '&workspace=' + encodeURIComponent(workspace))
+const reviewDetailJson = JSON.parse(reviewDetail.body)
+check('复盘详情接口', reviewDetail.status === 200 && String(reviewDetailJson.review?.transcript?.text ?? '').includes('AI 提升效率'), reviewDetail.body.slice(0, 300))
+
+const reviewMd = await get('/debate-api/review-md?id=' + encodeURIComponent(reviewId) + '&workspace=' + encodeURIComponent(workspace))
+check('复盘 Markdown 接口', reviewMd.status === 200 && reviewMd.body.includes('复盘：接口复盘测试') && reviewMd.body.includes('判比赛'), reviewMd.body.slice(0, 120))
+
+const audioBytes = Buffer.alloc(2048, 1)
+const audioUpload = await fetch(base + '/debate-api/review-audio?reviewId=' + encodeURIComponent(reviewId) + '&ext=wav&workspace=' + encodeURIComponent(workspace), {
+  method: 'POST',
+  headers: { 'content-type': 'application/octet-stream' },
+  body: audioBytes,
+})
+const audioUploadJson = JSON.parse(await audioUpload.text())
+check('录音可流式上传', audioUpload.status === 200 && audioUploadJson.audio?.bytes === 2048 && String(audioUploadJson.audio?.file ?? '').includes('recordings/'), JSON.stringify(audioUploadJson).slice(0, 300))
+
+const jobResponse = await post('/debate-api/review-job', { workspace, reviewId, kind: 'judge', perspective: 'white-paper' })
+const jobId = jobResponse.json?.job?.id
+check('复盘长任务可启动', jobResponse.status === 200 && jobResponse.json.job.state === 'running' && typeof jobId === 'string', JSON.stringify(jobResponse.json).slice(0, 300))
+let lastJob = null
+for (let index = 0; index < 60; index += 1) {
+  await sleep(50)
+  const payload = JSON.parse((await get('/debate-api/review-job?id=' + encodeURIComponent(jobId))).body)
+  lastJob = payload.job
+  if (lastJob !== null && lastJob.state !== 'running') break
+}
+check('复盘任务结束状态可读（无模型时报错）', lastJob !== null && lastJob.state === 'error' && /模型|AI/i.test(String(lastJob.message)), JSON.stringify(lastJob).slice(0, 300))
+
+const reviewDeleted = await post('/debate-api/tool', { name: 'debate_review', args: { action: 'delete', reviewId, workspace } })
+check('复盘可删除并清理录音', reviewDeleted.status === 200 && reviewDeleted.json.result.audioRemoved === true, JSON.stringify(reviewDeleted.json).slice(0, 200))
+
 server.close()
 console.log(`\n${failures === 0 ? '全部通过' : `${failures} 项失败`}`)
 if (failures > 0) process.exitCode = 1

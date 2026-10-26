@@ -113,6 +113,35 @@
           libraryAction: function (body) {
             return request('/library', { method: 'POST', body: JSON.stringify(body || {}) })
           },
+          reviews: function (project) {
+            return request('/reviews' + (typeof project === 'string' && project !== '' ? '?project=' + encodeURIComponent(project) : ''))
+          },
+          review: function (id, project) {
+            return request('/review?id=' + encodeURIComponent(id) + (typeof project === 'string' && project !== '' ? '&project=' + encodeURIComponent(project) : ''))
+          },
+          reviewAudio: function (reviewId, ext, file, project) {
+            var query = '?reviewId=' + encodeURIComponent(reviewId) + '&ext=' + encodeURIComponent(ext) + (typeof project === 'string' && project !== '' ? '&project=' + encodeURIComponent(project) : '')
+            return fetch(API_BASE + '/review-audio' + query, { method: 'POST', body: file, cache: 'no-store' }).then(function (response) {
+              return response
+                .json()
+                .catch(function () {
+                  return { ok: false, error: 'HTTP ' + response.status }
+                })
+                .then(function (payload) {
+                  if (!response.ok || payload.ok === false) throw new Error(payload.error || 'HTTP ' + response.status)
+                  return payload
+                })
+            })
+          },
+          reviewJob: function (body) {
+            return request('/review-job', { method: 'POST', body: JSON.stringify(body || {}) })
+          },
+          reviewJobStatus: function (id) {
+            return request('/review-job?id=' + encodeURIComponent(id))
+          },
+          reviewMarkdownUrl: function (id, project) {
+            return API_BASE + '/review-md?id=' + encodeURIComponent(id) + (typeof project === 'string' && project !== '' ? '&project=' + encodeURIComponent(project) : '')
+          },
           exportUrl: function () {
             return API_BASE + '/export'
           },

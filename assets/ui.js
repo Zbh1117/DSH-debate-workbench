@@ -38,6 +38,7 @@ const TABS = [
   { value: 'evaluate', label: '评估' },
   { value: 'manuscript', label: '稿件' },
   { value: 'projects', label: '项目' },
+  { value: 'review', label: '复盘' },
 ]
 const NODE_W = 190
 const NODE_H = 58
@@ -371,6 +372,15 @@ export function createWorkbench({ React, api }) {
     const [aiCandidate, setAiCandidate] = React.useState(null)
     const [aiHint, setAiHint] = React.useState('')
     const [aiBusy, setAiBusy] = React.useState(false)
+    const [reviews, setReviews] = React.useState([])
+    const [reviewSelectedId, setReviewSelectedId] = React.useState(null)
+    const [reviewDetail, setReviewDetail] = React.useState(null)
+    const [reviewTranscriptEdit, setReviewTranscriptEdit] = React.useState('')
+    const [reviewJob, setReviewJob] = React.useState(null)
+    const [reviewPerspective, setReviewPerspective] = React.useState('white-paper')
+    const [reviewMode, setReviewMode] = React.useState('votes')
+    const [reviewSubtitle, setReviewSubtitle] = React.useState('')
+    const [reviewDraft, setReviewDraft] = React.useState({ title: '', date: '', opponent: '', ourSide: 'pro', audioFile: null })
     const brandColor = themeColor('--dsw-alias-brand-primary', '#7c8cff')
     /**
      * 界面模块是热更新的，而 Host 插件代码要重启 App 才换。
@@ -483,6 +493,136 @@ export function createWorkbench({ React, api }) {
       [state],
     )
 
+    /* ---------- 复盘数据 ---------- */
+    /** 拉取复盘列表 + 选中项详情。 */
+    const reloadReviews = React.useCallback(
+      async preferredId => {
+        if (!hostReady) return
+        try {
+          const listed = await api.reviews(state?.activeProjectId ?? undefined)
+          const list = Array.isArray(listed.reviews) ? listed.reviews : []
+          setReviews(list)
+          const wanted = typeof preferredId === 'string' && preferredId !== '' ? preferredId : reviewSelectedId
+          const nextId = list.some(item => item.id === wanted) ? wanted : list[0]?.id
+          if (typeof nextId === 'string' && nextId !== '') {
+            setReviewSelectedId(nextId)
+            setReviewDetail(await api.review(nextId, state?.activeProjectId ?? undefined))
+          } else {
+            setReviewSelectedId(null)
+            setReviewDetail(null)
+          }
+        } catch (problem) {
+          setError(String(problem?.message ?? problem))
+        }
+      },
+      [hostReady, reviewSelectedId, state?.activeProjectId],
+    )
+
+    /** 选中一条复盘。 */
+    const selectReview = React.useCallback(
+      async id => {
+        if (typeof id !== 'string' || id === '') return
+        setReviewSelectedId(id)
+        try {
+          setReviewDetail(await api.review(id, state?.activeProjectId ?? undefined))
+        } catch (problem) {
+          setError(String(problem?.message ?? problem))
+        }
+      },
+      [state?.activeProjectId],
+    )
+
+    /** 新建复盘（可选录音 + 字幕/文本）。 */
+    const createReview = React.useCallback(async () => {
+      const title = reviewDraft.title.trim()
+      if (title === '') {
+        setError('请先填复盘标题')
+        return
+      }
+      setBusy(true)
+      try {
+        setError(null)
+        const created = await api.tool('debate_review', {
+          action: 'create',
+          title,
+          date: reviewDraft.date.trim() === '' ? undefined : reviewDraft.date.trim(),
+          opponent: reviewDraft.opponent.trim(),
+          ourSide: reviewDraft.ourSide,
+        })
+        const reviewId = created?.result?.reviewId
+        if (typeof reviewId !== 'string' || reviewId === '') throw new Error('创建复盘没有返回 id')
+        const file = reviewDraft.audioFile
+        if (file !== null && file !== undefined) {
+          const name = String(file.name ?? '')
+          const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : 'wav'
+          await api.reviewAudio(reviewId, ext, file, state?.activeProjectId ?? undefined)
+        }
+        if (reviewSubtitle.trim() !== '') {
+          await api.tool('debate_review', { action: 'import_transcript', reviewId, text: reviewSubtitle })
+        }
+        setReviewDraft(current => ({ ...current, title: '', opponent: '', date: '', audioFile: null }))
+        setReviewSubtitle('')
+        await reloadReviews(reviewId)
+        setNotice('复盘已创建')
+      } catch (problem) {
+        setError(String(problem?.message ?? problem))
+      } finally {
+        setBusy(false)
+      }
+    }, [reviewDraft, reviewSubtitle, reloadReviews, state?.activeProjectId])
+
+    /** 保存人工修订后的转写。 */
+    const saveReviewTranscript = React.useCallback(async () => {
+      if (reviewDetail?.review?.id === undefined) return
+      setBusy(true)
+      try {
+        await api.tool('debate_review', { action: 'update', reviewId: reviewDetail.review.id, transcriptText: reviewTranscriptEdit })
+        await reloadReviews()
+        setNotice('转写已保存')
+        setError(null)
+      } catch (problem) {
+        setError(String(problem?.message ?? problem))
+      } finally {
+        setBusy(false)
+      }
+    }, [reviewDetail, reviewTranscriptEdit, reloadReviews])
+
+    /** 启动复盘长任务（转写 / 判比赛 / 环节复盘 / 证据候选）。 */
+    const startReviewJobAction = React.useCallback(
+      async (kind, extra) => {
+        if (reviewDetail?.review?.id === undefined) return
+        try {
+          setError(null)
+          const payload = await api.reviewJob({
+            kind,
+            reviewId: reviewDetail.review.id,
+            project: state?.activeProjectId ?? undefined,
+            perspective: reviewPerspective,
+            mode: reviewMode,
+            ...(extra === undefined ? {} : extra),
+          })
+          setReviewJob(payload.job ?? null)
+          setNotice('任务已开始，完成后自动刷新')
+        } catch (problem) {
+          setError(String(problem?.message ?? problem))
+        }
+      },
+      [reviewDetail, reviewPerspective, reviewMode, state?.activeProjectId],
+    )
+
+    /** 删除当前复盘。 */
+    const deleteReview = React.useCallback(async () => {
+      if (reviewDetail?.review?.id === undefined) return
+      if (typeof window !== 'undefined' && typeof window.confirm === 'function' && window.confirm('删除这条复盘（含录音）？') !== true) return
+      try {
+        await api.tool('debate_review', { action: 'delete', reviewId: reviewDetail.review.id })
+        await reloadReviews('')
+        setNotice('复盘已删除')
+      } catch (problem) {
+        setError(String(problem?.message ?? problem))
+      }
+    }, [reviewDetail, reloadReviews])
+
     React.useEffect(() => {
       reload()
       const handle = setInterval(reload, 2500)
@@ -512,6 +652,39 @@ export function createWorkbench({ React, api }) {
         .then(payload => setLibraryCards(Array.isArray(payload.cards) ? payload.cards : []))
         .catch(problem => setError(String(problem?.message ?? problem)))
     }, [tab, evidenceMode, syncedAt])
+
+    // 复盘页：进入时拉列表与详情
+    React.useEffect(() => {
+      if (tab !== 'review' || !hostReady) return
+      reloadReviews()
+    }, [tab, hostReady, state?.activeProjectId])
+
+    // 复盘详情变化时同步转写编辑框
+    React.useEffect(() => {
+      setReviewTranscriptEdit(reviewDetail?.review?.transcript?.text ?? '')
+    }, [reviewDetail])
+
+    // 复盘长任务轮询
+    React.useEffect(() => {
+      if (reviewJob === null || reviewJob.state !== 'running') return
+      const handle = setInterval(async () => {
+        try {
+          const payload = await api.reviewJobStatus(reviewJob.id)
+          const job = payload?.job
+          if (job === undefined || job === null) return
+          setReviewJob(job)
+          if (job.state === 'done') {
+            setNotice(job.message)
+            reloadReviews()
+          } else if (job.state === 'error') {
+            setError(job.message)
+          }
+        } catch (problem) {
+          setError(String(problem?.message ?? problem))
+        }
+      }, 1500)
+      return () => clearInterval(handle)
+    }, [reviewJob, reloadReviews])
 
     const run = React.useCallback(
       async (name, args, message) => {
@@ -1384,6 +1557,279 @@ export function createWorkbench({ React, api }) {
     }
 
     /* ---------- 项目 / 待办 ---------- */
+    /* ---------- 复盘标签页 ---------- */
+    const reviewPerspectiveOptions = [
+      ['white-paper', '白纸评委'],
+      ['argument', '论点裁'],
+      ['technical', '技术裁'],
+      ['value', '价值裁'],
+      ['situational', '情境裁'],
+    ]
+    const reviewSideText = side => (side === 'con' ? '反方' : '正方')
+    const reviewJobLabel = kind => ({ transcribe: '录音转写', judge: '判比赛', phases: '环节复盘', evidence: '证据候选' }[kind] ?? kind)
+
+    const renderReviewTab = () => {
+      if (!hostReady) {
+        return h(
+          'div',
+          { className: bodyClass() },
+          h('div', { className: 'dwb-pane' }, h('div', { className: 'dwb-banner', style: { borderRadius: 8, padding: '10px 12px' } }, hostHint)),
+        )
+      }
+      const detail = reviewDetail?.review ?? null
+      const jobRunning = reviewJob !== null && reviewJob.state === 'running'
+      const actionButton = (label, onClick, primary) =>
+        h(
+          'button',
+          { type: 'button', className: 'dwb-btn', disabled: busy || jobRunning, 'data-primary': primary ? '1' : undefined, onClick },
+          label,
+        )
+
+      const listPane = h(
+        'div',
+        { className: 'dwb-pane', style: { flex: '0 0 min(280px, 100%)', minWidth: 220 } },
+        h('div', { style: { fontWeight: 650, marginBottom: 4 } }, '复盘记录'),
+        h('div', { className: 'dwb-muted', style: { marginBottom: 8 } }, '录音 + 转写 → 三票制判比赛 + 按环节复盘'),
+        h(
+          'div',
+          { className: 'dwb-list' },
+          reviews.length === 0 ? h('div', { className: 'dwb-muted' }, '还没有复盘。下面新建一条。') : null,
+          reviews.map(item =>
+            h(
+              'div',
+              {
+                key: item.id,
+                className: 'dwb-item',
+                style: item.id === reviewSelectedId ? { borderColor: 'rgba(124,140,255,0.55)', cursor: 'pointer' } : { cursor: 'pointer' },
+                onClick: () => selectReview(item.id),
+              },
+              h(
+                'div',
+                { className: 'dwb-row' },
+                h('b', null, item.title),
+                h('span', { className: 'dwb-chip' }, reviewSideText(item.ourSide)),
+              ),
+              h('div', { className: 'dwb-muted' }, item.date + (item.opponent === '' ? '' : ' · ' + item.opponent) + (item.winner === undefined ? ' · 未判' : ' · ' + reviewSideText(item.winner) + '胜 ' + (item.voteCount ?? ''))),
+              h('div', { className: 'dwb-muted' }, (item.hasTranscript ? '已转写' : '无转写') + ' · ' + (item.hasJudge ? '已判' : '未判') + ' · 环节 ' + (item.phaseCount ?? 0) + ' · 候选 ' + (item.evidenceCandidates ?? 0) + (item.hasAudio ? ' · 有录音' : '')),
+            ),
+          ),
+        ),
+        h(
+          'div',
+          { className: 'dwb-item', style: { marginTop: 10 } },
+          h('div', { style: { fontWeight: 650, marginBottom: 6 } }, '新建复盘'),
+          h('input', {
+            className: 'dwb-input',
+            style: { width: '100%', marginBottom: 6 },
+            placeholder: '标题（如：对XX大学模辩）',
+            value: reviewDraft.title,
+            onChange: event => setReviewDraft(current => ({ ...current, title: event.target.value })),
+          }),
+          h(
+            'div',
+            { className: 'dwb-row', style: { marginBottom: 6 } },
+            h('input', {
+              className: 'dwb-input',
+              style: { flex: '1 1 110px' },
+              placeholder: '日期 2030-01-01',
+              value: reviewDraft.date,
+              onChange: event => setReviewDraft(current => ({ ...current, date: event.target.value })),
+            }),
+            h(
+              'select',
+              { className: 'dwb-input', style: { flex: '0 0 78px' }, value: reviewDraft.ourSide, onChange: event => setReviewDraft(current => ({ ...current, ourSide: event.target.value })) },
+              h('option', { value: 'pro' }, '正方'),
+              h('option', { value: 'con' }, '反方'),
+            ),
+          ),
+          h('input', {
+            className: 'dwb-input',
+            style: { width: '100%', marginBottom: 6 },
+            placeholder: '对手（可选）',
+            value: reviewDraft.opponent,
+            onChange: event => setReviewDraft(current => ({ ...current, opponent: event.target.value })),
+          }),
+          h('div', { className: 'dwb-muted', style: { marginBottom: 4 } }, '录音（可选，转写需 16kHz 单声道 PCM16 WAV）'),
+          h('input', {
+            type: 'file',
+            accept: '.wav,.m4a,.mp3,.ogg,.webm,.flac,.aac,audio/*',
+            style: { marginBottom: 6, fontSize: 11 },
+            onChange: event => setReviewDraft(current => ({ ...current, audioFile: event.target.files && event.target.files[0] ? event.target.files[0] : null })),
+          }),
+          h('div', { className: 'dwb-muted', style: { marginBottom: 4 } }, '字幕/转写文本（.srt/.vtt/.txt 或直接粘贴）'),
+          h('input', {
+            type: 'file',
+            accept: '.srt,.vtt,.txt',
+            style: { marginBottom: 6, fontSize: 11 },
+            onChange: event => {
+              const picked = event.target.files && event.target.files[0]
+              if (!picked) return
+              picked.text().then(text => setReviewSubtitle(text)).catch(problem => setError(String(problem?.message ?? problem)))
+            },
+          }),
+          h('textarea', {
+            className: 'dwb-input',
+            style: { width: '100%', minHeight: 64, marginBottom: 6, fontSize: 11 },
+            placeholder: '字幕或转写文本',
+            value: reviewSubtitle,
+            onChange: event => setReviewSubtitle(event.target.value),
+          }),
+          actionButton('创建复盘', createReview, true),
+        ),
+      )
+
+      const judge = detail?.judge
+      const judgeView =
+        judge === undefined || judge === null
+          ? null
+          : h(
+              'div',
+              { className: 'dwb-item', style: { marginTop: 10 } },
+              h(
+                'div',
+                { className: 'dwb-row', style: { marginBottom: 6 } },
+                h('b', null, '判比赛'),
+                h('span', { className: 'dwb-chip' }, (reviewPerspectiveOptions.find(item => item[0] === judge.perspective) ?? [])[1] ?? judge.perspective ?? ''),
+                h('span', { className: 'dwb-chip' }, reviewSideText(judge.winner) + '胜 ' + (judge.voteCount ?? '')),
+                h('span', { className: 'dwb-muted' }, judge.disclaimer ?? ''),
+              ),
+              h(
+                'div',
+                null,
+                ['impression', 'phase', 'decision'].map(key =>
+                  h(
+                    'div',
+                    { key, style: { marginBottom: 4 } },
+                    h('b', null, (key === 'impression' ? '印象票：' : key === 'phase' ? '环节票：' : '决胜票：') + reviewSideText(judge.votes?.[key]) + ' '),
+                    h('span', null, judge.reasons?.[key] ?? ''),
+                  ),
+                ),
+              ),
+              detail.judge.minimalMargin ? h('div', { className: 'dwb-muted', style: { marginTop: 4 } }, '最小致胜差异：' + judge.minimalMargin) : null,
+              Array.isArray(judge.argumentSurvival) && judge.argumentSurvival.length > 0
+                ? h(
+                    'div',
+                    { style: { marginTop: 6 } },
+                    h('div', { style: { fontWeight: 600 } }, '论证留存度'),
+                    judge.argumentSurvival.map((item, index) =>
+                      h('div', { key: 'survival-' + index, className: 'dwb-muted' }, '[' + reviewSideText(item.side) + '] ' + item.argument + '：' + (item.survived === true ? '存活' : '被打掉') + (item.afterClash ? '（' + item.afterClash + '）' : '')),
+                    ),
+                  )
+                : null,
+              Array.isArray(judge.decisiveClashes) && judge.decisiveClashes.length > 0
+                ? h(
+                    'div',
+                    { style: { marginTop: 6 } },
+                    h('div', { style: { fontWeight: 600 } }, '关键交锋'),
+                    judge.decisiveClashes.map((item, index) =>
+                      h('div', { key: 'clash-' + index, className: 'dwb-muted' }, item.clash + ' → 判 ' + reviewSideText(item.judgedFor) + '（' + item.why + '）'),
+                    ),
+                  )
+                : null,
+            )
+
+      const phaseReview = Array.isArray(detail?.phaseReview) ? detail.phaseReview : []
+      const phaseView =
+        phaseReview.length === 0
+          ? null
+          : h(
+              'div',
+              { className: 'dwb-item', style: { marginTop: 10 } },
+              h('div', { style: { fontWeight: 650, marginBottom: 6 } }, '环节复盘'),
+              phaseReview.map(phase =>
+                h(
+                  'div',
+                  { key: phase.phase, style: { marginBottom: 8 } },
+                  h('div', { className: 'dwb-row' }, h('b', null, phase.phase), h('span', { className: 'dwb-muted' }, phase.scores === undefined ? '' : '我方 ' + (phase.scores.pro ?? '-') + ' / 对方 ' + (phase.scores.con ?? '-'))),
+                  phase.summary ? h('div', { className: 'dwb-muted' }, phase.summary) : null,
+                  (phase.findings ?? []).map((finding, index) =>
+                    h('div', { key: 'finding-' + index, style: { fontSize: 11, marginTop: 2 } }, (finding.at ? '[' + finding.at + '] ' : '') + '问题：' + finding.issue + (finding.advice ? '；建议：' + finding.advice : '')),
+                  ),
+                  phase.drill ? h('div', { className: 'dwb-muted', style: { fontSize: 11 } }, '训练建议：' + phase.drill) : null,
+                ),
+              ),
+            )
+
+      const candidates = Array.isArray(detail?.evidenceCandidates) ? detail.evidenceCandidates : []
+      const candidateView =
+        candidates.length === 0
+          ? null
+          : h(
+              'div',
+              { className: 'dwb-item', style: { marginTop: 10 } },
+              h('div', { style: { fontWeight: 650, marginBottom: 6 } }, '证据候选（pending，未入库）'),
+              candidates.map(candidate =>
+                h('div', { key: candidate.id, className: 'dwb-muted', style: { fontSize: 11 } }, '[' + candidate.type + '][' + candidate.status + '] ' + candidate.claim + (candidate.need ? '（' + candidate.need + '）' : '')),
+              ),
+            )
+
+      const detailPane = h(
+        'div',
+        { className: 'dwb-pane', style: { flex: '1 1 auto', minWidth: 300 } },
+        detail === null
+          ? h('div', { className: 'dwb-muted' }, '左侧选择或新建一条复盘。')
+          : h(
+              'div',
+              null,
+              h(
+                'div',
+                { className: 'dwb-row', style: { marginBottom: 6 } },
+                h('b', { style: { fontSize: 14 } }, detail.title),
+                h('span', { className: 'dwb-chip' }, reviewSideText(detail.ourSide)),
+                h('span', { className: 'dwb-muted' }, detail.date + (detail.opponent === '' ? '' : ' · ' + detail.opponent)),
+                h('span', { className: 'dwb-spacer' }),
+                h('a', { className: 'dwb-btn', href: api.reviewMarkdownUrl(detail.id, state?.activeProjectId ?? undefined), download: '' }, '导出 Markdown'),
+                actionButton('删除', deleteReview),
+              ),
+              h('div', { className: 'dwb-muted', style: { marginBottom: 8 } }, detail.source?.audio ? '录音：' + detail.source.audio.file + '（' + Math.round((detail.source.audio.bytes ?? 0) / 1024) + ' KB）' : '无录音（可导入字幕/文本）'),
+              h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '转写'),
+              h('textarea', {
+                className: 'dwb-input',
+                style: { width: '100%', minHeight: 110, marginBottom: 6, fontSize: 12 },
+                value: reviewTranscriptEdit,
+                onChange: event => setReviewTranscriptEdit(event.target.value),
+              }),
+              h(
+                'div',
+                { className: 'dwb-row', style: { marginBottom: 10 } },
+                actionButton('保存转写', saveReviewTranscript),
+                actionButton('一键转写', () => startReviewJobAction('transcribe')),
+                h('span', { className: 'dwb-muted' }, Array.isArray(detail.transcript?.segments) && detail.transcript.segments.length > 0 ? '已解析 ' + detail.transcript.segments.length + ' 段' : ''),
+              ),
+              h(
+                'div',
+                { className: 'dwb-row', style: { marginBottom: 8 } },
+                h(
+                  'select',
+                  { className: 'dwb-input', style: { flex: '0 0 108px' }, value: reviewPerspective, onChange: event => setReviewPerspective(event.target.value) },
+                  reviewPerspectiveOptions.map(item => h('option', { key: item[0], value: item[0] }, item[1])),
+                ),
+                h(
+                  'select',
+                  { className: 'dwb-input', style: { flex: '0 0 92px' }, value: reviewMode, onChange: event => setReviewMode(event.target.value) },
+                  h('option', { value: 'votes' }, '三票制'),
+                  h('option', { value: 'score' }, '分数辅助'),
+                ),
+                actionButton('生成判比赛', () => startReviewJobAction('judge'), true),
+                actionButton('生成环节复盘', () => startReviewJobAction('phases')),
+                actionButton('提取证据候选', () => startReviewJobAction('evidence')),
+              ),
+              reviewJob === null
+                ? null
+                : h('div', { className: 'dwb-banner', style: { borderRadius: 8, padding: '8px 10px', marginBottom: 8, whiteSpace: 'pre-wrap', fontSize: 11 } }, reviewJobLabel(reviewJob.kind) + '：' + (reviewJob.state === 'running' ? '执行中…' : reviewJob.state === 'done' ? '完成' : '失败') + ' — ' + String(reviewJob.message ?? '')),
+              judgeView,
+              phaseView,
+              candidateView,
+            ),
+      )
+
+      return h(
+        'div',
+        { className: bodyClass() },
+        h('div', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: narrow ? 'wrap' : 'nowrap', minHeight: 0 } }, listPane, detailPane),
+      )
+    }
+
     const renderProjectsTab = () => {
       if (!hostReady) {
         return h(
@@ -2003,9 +2449,11 @@ export function createWorkbench({ React, api }) {
             ? renderAttack()
             : tab === 'evaluate'
               ? renderEvaluate()
-              : tab === 'projects'
-                ? renderProjectsTab()
-                : renderManuscript()
+              : tab === 'review'
+                ? renderReviewTab()
+                : tab === 'projects'
+                  ? renderProjectsTab()
+                  : renderManuscript()
 
     if (state !== null && state.snapshot !== undefined && state.snapshot.active !== true) {
       return h(

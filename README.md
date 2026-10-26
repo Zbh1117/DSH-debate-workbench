@@ -3,11 +3,11 @@
 [![npm version](https://img.shields.io/npm/v/dsh-debate-workbench.svg)](https://www.npmjs.com/package/dsh-debate-workbench)
 [![license](https://img.shields.io/npm/l/dsh-debate-workbench.svg)](LICENSE)
 
-把 DeepSeek Harness（DSH）变成**辩论备赛工作区**：DSH 右侧栏里有一个原生「辩论工作台」标签页，与对话左右并排；模型通过 14 个 `debate_*` 工具直接读写同一份结构化数据。数据模型与 DebateWeaver 的 `ProjectExportBundle` 一致，可双向导入导出。
+把 DeepSeek Harness（DSH）变成**辩论备赛工作区**：DSH 右侧栏里有一个原生「辩论工作台」标签页，与对话左右并排；模型通过 15 个 `debate_*` 工具直接读写同一份结构化数据。数据模型与 DebateWeaver 的 `ProjectExportBundle` 一致，可双向导入导出。
 
 ## 功能
 
-### 模型工具（14 个）
+### 模型工具（15 个）
 
 | 分组 | 工具 | 能力 |
 | --- | --- | --- |
@@ -25,8 +25,9 @@
 | 模型 | `debate_ai` | `status` / `decompose`（拆题候选）/ `attacks`（攻防候选）/ `apply`（确认后落库） |
 | 编排 | `debate_context` | 只读上下文：`digest` 摘要 / `outline` 树大纲 / `search_evidence` 跨库检索 |
 | 编排 | `debate_plan` | 批量编排：`build_tree`（按拆题搭树）/ `fill_attacks`（批量写攻防），默认 dryRun |
+| 复盘 | `debate_review` | 比赛复盘（sidecar）：`create` / `list` / `read` / `update` / `delete` / `export` / `import_transcript` / `transcribe` / `analyze_judge`（三票制）/ `analyze_phases` / `evidence_candidates` |
 
-### 界面（原生右栏，7 个标签页）
+### 界面（原生右栏，8 个标签页）
 
 - **论证树**：点阵网格画布、滚轮缩放、拖拽平移、选中浮窗编辑（标题/说明/类型/加子论点/连线/删除/挂证据/攻防摘要）、自动排版与定位复位
 - **拆题**：拆题结构只读展示 + AI 拆题助手（候选预览 → 确认后应用）
@@ -35,6 +36,7 @@
 - **评估**：五维进度条 + 就绪度 + 最该补的缺口
 - **稿件**：生成预览 / 保存 / 导出
 - **项目**：新建/切换/重命名/删除题目、每题待办、跨题总览
+- **复盘**：复盘列表 + 新建（录音上传/字幕粘贴）、转写（一键转写或导入 .srt/.vtt/文本）、选评委视角生成判比赛（三票制）与环节复盘、证据候选、导出 Markdown
 
 ### 多题目
 
@@ -73,7 +75,7 @@
 
 ### 插件市场收录信息（供审核/用户评估）
 
-- **一句话价值**：在 DSH 右侧栏获得一个与对话联动的辩论备赛工作台——论证树、拆题、证据库、攻防、五维评估、稿件全部结构化，模型可用 14 个工具直接读写。
+- **一句话价值**：在 DSH 右侧栏获得一个与对话联动的辩论备赛工作台——论证树、拆题、证据库、攻防、五维评估、稿件全部结构化，模型可用 15 个工具直接读写。
 - **能力分类**：工具与能力（同时含界面与体验）
 - **安装命令**：`dsh plugin --profile web add dsh-debate-workbench`（profile 名按实际填，桌面版为 `desktop`）
 - **兼容性**：在 DSH `0.2.0-rc.2` 桌面版验证；Windows / macOS / Linux（纯 Node + 浏览器端插件，无原生依赖）
@@ -135,6 +137,8 @@ debate_workbench(action=open)   # 打开右栏工作台
   projects/<题目id>/
     project.bundle.json            # ProjectExportBundle（唯一事实来源，可直接给 DebateWeaver）
     tasks.json                     # 每题备赛待办
+    reviews/<reviewId>.json        # 比赛复盘（判比赛三票 + 环节复盘 + 证据候选，独立 sidecar）
+    recordings/<reviewId>.<ext>    # 复盘录音（默认 gitignore 忽略，本地保存）
   shared/evidence.json             # 公共证据库（跨题共享）
   ui.json                          # 界面状态
   export/                          # 导出副本
@@ -142,6 +146,20 @@ $DSH_HOME/debate-workbench.json    # 跨工作区指针：激活题目 + 已知�
 ```
 
 写入统一「临时文件 + rename」；`ui.json` 浅合并。工具默认操作**当前激活工作区**（与右栏界面一致），可用 `workspace` 参数显式指定其它工作区。
+
+## 比赛复盘（判比赛 + 环节复盘）
+
+输入是**比赛录音**或**转写文本**，输出两部分：
+
+1. **判比赛**：三票制——印象票（整体架构比较）、环节票（按环节表现）、决胜票（论证留存度）；三票各自给判票理由，并给出关键交锋裁决、整体架构比较、最小致胜差异。**评委视角（白纸/论点裁/技术裁/价值裁/情境裁）每次生成前必选**，不设默认。
+2. **按环节复盘**：立论 / 质询 / 自由辩论 / 结辩逐环节分析：问题（有字幕时间戳就带时间戳）、建议、亮点、短板、训练建议。
+
+转写/输入三条路：
+- **一键转写**：使用 DSH 官方「语音输入」插件（本地 SenseVoice，需在插件面板启用并下载模型）。只接受 **16kHz 单声道 PCM16 WAV**，插件按 ~110 秒自动切片转写
+- **字幕导入**：粘贴或导入 .srt/.vtt（腾讯会议/飞书妙记/讯飞听见导出），保留时间戳
+- **纯文本**：直接粘贴转写稿
+
+证据：复盘会提取「待核验证据候选」（比赛中的陈述**不会**直接入证据库），核验来源后用 `debate_evidence(import)` 入库。
 
 ## AI 能力
 
@@ -175,18 +193,21 @@ $DSH_HOME/debate-workbench.json    # 跨工作区指针：激活题目 + 已知�
 ```powershell
 npm test   # = 下面四套
 node tests/apply.test.mjs    # 启动装配与降级（8）
-node tests/logic.test.mjs    # 工具全链路：多题目/拆题/树/证据/攻防/评估/稿件/导入导出/AI/编排（77）
-node tests/api.test.mjs      # HTTP API 全流程（20）
-node tests/client.test.mjs   # 客户端加载器 + 界面渲染，React 替身（31）
+node tests/logic.test.mjs    # 工具全链路：多题目/拆题/树/证据/攻防/评估/稿件/导入导出/AI/编排/复盘（100）
+node tests/api.test.mjs      # HTTP API 全流程（28）
+node tests/client.test.mjs   # 客户端加载器 + 界面渲染，React 替身（33）
 ```
 
-四套测试都不需要 DSH 运行时、不改 profile，共 **136 项**。
+四套测试都不需要 DSH 运行时、不改 profile，共 **169 项**。
 
 ## 已知限制
 
 - **客户端右栏 API 依赖宿主**：`sidebarRightTabs` / `sidebarRight` 是 DSH 官方插件同款接口，DSH 升级若改动需适配
 - **Host/客户端改动需要重启**：只有 `assets/ui.js` 支持热更新
 - 宿主若没有 `llm` 服务，AI 功能会提示不可用，其余功能不受影响
+- **复盘转写依赖官方语音插件**：未启用「语音输入」时只能导入字幕/文本；转写只接受 16kHz 单声道 PCM16 WAV（m4a/mp3 需先转 WAV）
+- 长录音转写是本地 CPU 推理（按 110 秒切片串行），40–60 分钟比赛需要几分钟；转写在界面里以后台任务方式运行，可看到状态
+- 复盘只分析音频/文本，不做视频画面分析
 - 尚未实现：连线鼠标绘制、证据卡评分编辑、模辩对战、与 DebateWeaver 的实时 API 对接（目前文件级互通）
 
 ## 目录结构
