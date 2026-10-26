@@ -33,7 +33,62 @@ const fakeDecomposeJson = {
 }
 const fakeLlm = {
   async *stream(options) {
-    const isAttackPrompt = typeof options?.system === 'string' && options.system.includes('攻防预判')
+    const system = typeof options?.system === 'string' ? options.system : ''
+    if (system.includes('"evidenceCandidates"')) {
+      const evidenceCandidates = [
+        { type: 'data', claim: '反方称 AI 导致 40% 岗位消失', need: '待核验', searchKeywords: ['AI 就业 岗位 数据'] },
+        { type: 'case', claim: '正方引用某国全民基本收入试点', need: '缺失来源', searchKeywords: ['全民基本收入 试点 结果'] },
+        { type: 'theory', claim: '比较优势机制：技术提升总量再分配', need: '可入库（理论）', searchKeywords: ['比较优势 技术 就业'] },
+      ]
+      yield { type: 'text-delta', index: 0, text: JSON.stringify({ evidenceCandidates }) }
+      yield { type: 'usage', usage: { inputTokens: 200, outputTokens: 300 } }
+      yield { type: 'finish', reason: { kind: 'stop' } }
+      return
+    }
+    if (system.includes('"votes"') && system.includes('"impression"')) {
+      const judge = {
+        votes: { impression: 'pro', phase: 'pro', decision: 'pro' },
+        reasons: {
+          impression: '正方整体架构更完整：定义清晰、比较平台成立、价值与论证咬合，反方架构停留在个案。',
+          phase: '正方在立论与结辩占优，质询略亏但自由辩论稳住了战场，综合环节表现判正方。',
+          decision: '正方核心论证存活 3/5，反方 1/5；反方的结构性失业被效率红利反驳后未能重建，决胜票归正方。',
+        },
+        architecture: { pro: '效率红利 + 治理可控', con: '结构性代价不可逆', compared: '正方的比较平台更完整' },
+        argumentSurvival: [
+          { argument: '效率红利扩大总量', side: 'pro', survived: true, afterClash: '反方未给同口径反证' },
+          { argument: '治理可控', side: 'pro', survived: true, afterClash: '反方未能证明不可控' },
+          { argument: '新岗位会替代旧岗位', side: 'pro', survived: false, afterClash: '被反方转换成本打掉一半' },
+          { argument: '结构性失业不可逆', side: 'con', survived: false, afterClash: '被总量口径化解' },
+        ],
+        decisiveClashes: [
+          { clash: '总量 vs 结构', judgedFor: 'pro', why: '反方始终没给出同口径数据' },
+          { clash: '技术可控性', judgedFor: 'pro', why: '反方没有证明不可控' },
+        ],
+        minimalMargin: '决胜票的关键在反方未能重建结构性失业论证。',
+      }
+      yield { type: 'text-delta', index: 0, text: JSON.stringify(judge) }
+      yield { type: 'usage', usage: { inputTokens: 300, outputTokens: 500 } }
+      yield { type: 'finish', reason: { kind: 'stop' } }
+      return
+    }
+    if (system.includes('phaseReview')) {
+      const phaseReview = ['立论', '质询', '自由辩论', '结辩'].map(phase => ({
+        phase,
+        summary: `${phase}环节双方围绕核心分歧展开，正方在比较平台上更清晰，反方在细节数据上不足。`,
+        findings: [
+          { at: '01:20', issue: `${phase}中的定义攻防不够主动`, advice: '提前准备定义战的三个追问' },
+          { at: '02:40', issue: `${phase}中回应速度偏慢`, advice: '用一句话确认对方口径再反击' },
+        ],
+        strengths: ['表达清楚'],
+        weaknesses: ['数据缺失'],
+        drill: '做 10 分钟快问快答训练',
+      }))
+      yield { type: 'text-delta', index: 0, text: JSON.stringify({ phaseReview }) }
+      yield { type: 'usage', usage: { inputTokens: 300, outputTokens: 600 } }
+      yield { type: 'finish', reason: { kind: 'stop' } }
+      return
+    }
+    const isAttackPrompt = system.includes('攻防预判')
     if (isAttackPrompt) {
       // 内置 llm 调用里正文在 messages 中，不在 options.prompt
       const messageText = Array.isArray(options?.messages)
@@ -59,6 +114,16 @@ const fakeLlm = {
     yield { type: 'finish', reason: { kind: 'stop' } }
   },
 }
+const fakeSpeech = {
+  listProviders: () => [{ id: 'fake-sensevoice', languages: ['zh', 'en'] }],
+  snapshot: () => ({ providers: [{ id: 'fake-sensevoice' }], selection: { providerId: 'fake-sensevoice' } }),
+  resolve(request) {
+    return { provider: { id: 'fake-sensevoice' }, audio: request.audio, language: request.language ?? 'zh' }
+  },
+  async transcribe(spec) {
+    return { text: '这是假语音服务的转写内容。', audioSeconds: 2, inferenceSeconds: 0.05 }
+  },
+}
 const fakeAgentDefaultModel = { currentSelection: () => ({ provider: 'fake-provider', model: 'fake-model' }) }
 const definitions = registerDebateTools(
   {
@@ -67,6 +132,7 @@ const definitions = registerDebateTools(
     get(name) {
       if (name === 'llm') return fakeLlm
       if (name === 'agentDefaultModel') return fakeAgentDefaultModel
+      if (name === 'speechToText') return fakeSpeech
       return undefined
     },
   },
@@ -420,6 +486,72 @@ check(
 
 const reviewDeleted = await call('debate_review', { action: 'delete', reviewId })
 check('复盘可删除且清理录音', reviewDeleted.audioRemoved === true && !fs.existsSync(recordingAbs), JSON.stringify(reviewDeleted))
+
+/* 15. 复盘转写与 AI（M3/M4） */
+const makeWav = seconds => {
+  const dataBytes = Math.round(seconds * 16000 * 2)
+  const header = Buffer.alloc(44)
+  header.write('RIFF', 0, 'ascii')
+  header.writeUInt32LE(36 + dataBytes, 4)
+  header.write('WAVE', 8, 'ascii')
+  header.write('fmt ', 12, 'ascii')
+  header.writeUInt32LE(16, 16)
+  header.writeUInt16LE(1, 20)
+  header.writeUInt16LE(1, 22)
+  header.writeUInt32LE(16000, 24)
+  header.writeUInt32LE(32000, 28)
+  header.writeUInt16LE(2, 32)
+  header.writeUInt16LE(16, 34)
+  header.write('data', 36, 'ascii')
+  header.writeUInt32LE(dataBytes, 40)
+  return Buffer.concat([header, Buffer.alloc(dataBytes, 0)])
+}
+const wavFile = path.join(workspace, 'match.wav')
+fs.writeFileSync(wavFile, makeWav(2))
+const sttReview = await call('debate_review', { action: 'create', title: '对YY大学模辩', date: '2030-02-03', ourSide: 'pro', audioPath: wavFile })
+check('复盘可附带规范 WAV 录音', sttReview.review.audio?.ext === 'wav' && sttReview.review.audio.bytes > 64000, JSON.stringify(sttReview.review.audio))
+
+const sttDone = await call('debate_review', { action: 'transcribe', reviewId: sttReview.reviewId, phaseBoundaries: [{ phase: '立论', start: 0, end: 2 }] })
+check('录音可转写（假语音服务）', sttDone.chunks >= 1 && sttDone.provider === 'fake-sensevoice' && sttDone.chars > 0, JSON.stringify(sttDone))
+const sttRead = await call('debate_review', { action: 'read', reviewId: sttReview.reviewId })
+check('转写结果写入 transcript 且带环节标签', sttRead.review.transcript.text.includes('假语音') && sttRead.review.transcript.segments.some(segment => segment.phase === '立论'), JSON.stringify(sttRead.review.transcript.segments))
+
+const srtText = ['1', '00:00:01,000 --> 00:00:03,500', '正方一辩：AI 提升生产率。', '', '2', '00:00:04,000 --> 00:00:06,000', '反方质询：结构性失业怎么解释？'].join('\n')
+const srtReview = await call('debate_review', { action: 'create', title: '字幕导入测试', date: '2030-02-04' })
+const importedTranscript = await call('debate_review', { action: 'import_transcript', reviewId: srtReview.reviewId, text: srtText, phaseBoundaries: [{ phase: '立论', start: 0, end: 3.6 }] })
+check('SRT 可解析并导入（含时间戳）', importedTranscript.format === 'srt' && importedTranscript.segmentCount === 2 && importedTranscript.phaseTagged === 1, JSON.stringify(importedTranscript))
+const srtRead = await call('debate_review', { action: 'read', reviewId: srtReview.reviewId })
+check('SRT 时间戳写入 segments', srtRead.review.transcript.segments[0]?.start === 1 && String(srtRead.review.transcript.text).includes('结构性失业'), JSON.stringify(srtRead.review.transcript.segments[0]))
+
+let missingPerspective = false
+try {
+  await call('debate_review', { action: 'analyze_judge', reviewId: sttReview.reviewId })
+} catch (error) {
+  missingPerspective = String(error).includes('perspective')
+}
+check('analyze_judge 必须选择评委视角', missingPerspective === true)
+
+const judged = await call('debate_review', { action: 'analyze_judge', reviewId: sttReview.reviewId, perspective: 'white-paper', mode: 'votes' })
+check('判比赛生成（三票制）', judged.winner === 'pro' && judged.voteCount === '3:0' && Object.values(judged.votes).every(side => side === 'pro'), JSON.stringify(judged.votes))
+const judgedRead = await call('debate_review', { action: 'read', reviewId: sttReview.reviewId })
+check('判票理由与论证留存度已写入', judgedRead.review.judge.reasons.decision.length > 20 && judgedRead.review.judge.argumentSurvival.length >= 4 && judgedRead.review.judge.decisiveClashes.length >= 2, JSON.stringify({ survival: judgedRead.review.judge.argumentSurvival.length, clashes: judgedRead.review.judge.decisiveClashes.length }))
+
+const phased = await call('debate_review', { action: 'analyze_phases', reviewId: sttReview.reviewId })
+check('环节复盘生成', phased.phases.length === 4 && phased.phases.includes('自由辩论'), JSON.stringify(phased.phases))
+const phasedRead = await call('debate_review', { action: 'read', reviewId: sttReview.reviewId })
+check('每个环节至少 2 条问题', phasedRead.review.phaseReview.every(phase => phase.findings.length >= 2), JSON.stringify(phasedRead.review.phaseReview.map(phase => phase.findings.length)))
+
+const candidates = await call('debate_review', { action: 'evidence_candidates', reviewId: sttReview.reviewId })
+check('证据候选提取（全部 pending）', candidates.candidates.length >= 2 && candidates.candidates.every(item => item.status === 'pending'), JSON.stringify(candidates.candidates))
+const finalRead = await call('debate_review', { action: 'read', reviewId: sttReview.reviewId })
+check('证据候选未入库（公共库不增加）', (await call('debate_library', { action: 'list' })).cards.every(card => !String(card.title ?? '').includes('反方称 AI 导致')), '')
+const exportedReview = await call('debate_review', { action: 'export', reviewId: sttReview.reviewId })
+check('复盘 Markdown 含三票与环节复盘', exportedReview.markdown.includes('印象票') && exportedReview.markdown.includes('环节票') && exportedReview.markdown.includes('决胜票') && exportedReview.markdown.includes('环节复盘'), exportedReview.path.slice(-60))
+check('判比赛免责声明写入', String(finalRead.review.judge.disclaimer).includes('模拟评委'), finalRead.review.judge.disclaimer)
+
+const cleanupStt = await call('debate_review', { action: 'delete', reviewId: sttReview.reviewId })
+const cleanupSrt = await call('debate_review', { action: 'delete', reviewId: srtReview.reviewId })
+check('复盘清理（含录音）', cleanupStt.audioRemoved === true && cleanupSrt.audioRemoved === false, JSON.stringify({ stt: cleanupStt, srt: cleanupSrt }))
 
 console.log(`\n${failures === 0 ? '全部通过' : `${failures} 项失败`}`)
 console.log(`产物目录：${path.join(workspace, '.debate')}`)

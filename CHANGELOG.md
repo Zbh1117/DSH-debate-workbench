@@ -2,6 +2,12 @@
 
 本项目遵循语义化版本（`MAJOR.MINOR.PATCH`）。插件与 DSH 宿主版本解耦：插件版本独立发布，兼容性在 README 中标注。
 
+## 0.7.0-alpha.2（未发布 · 复盘 M3/M4 里程碑）
+
+- 转写：ction=import_transcript 支持 .srt/.vtt/纯文本解析（保留时间戳、可打环节标签）；ction=transcribe 接入 DSH 内置 speechToText（本地 SenseVoice），按 ~110 秒切片转写（要求 16kHz 单声道 PCM16 WAV），未启用语音插件时给出启用指引。
+- AI：nalyze_judge（三票制：印象/环节/决胜；视角必选；输出判票理由/架构比较/论证留存度/关键交锋/最小致胜差异）、nalyze_phases（按环节复盘）、evidence_candidates（待核验证据候选，不自动入库）。
+- 内置「辩论赛评委」skill（debate-judge），启动时注册到 DSH skills，可被项目 .dsh/skills/ 同名 skill 覆盖。
+- 测试：新增 WAV/字幕/转写/三票制/环节复盘/证据候选断言，四套自测共 159 项全绿。
 ## 0.7.0-alpha.1（未发布 · 复盘 M1/M2 里程碑）
 
 - 新增 `debate_review` 工具（复盘 sidecar 数据层 + 工具层）：`create / list / read / update / delete / export`。
