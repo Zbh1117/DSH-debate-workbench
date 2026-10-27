@@ -555,11 +555,59 @@ export function createWorkbench({ React, api }) {
       if (typeof AudioContextCtor !== 'function' || typeof OfflineContextCtor !== 'function') {
         throw new Error('当前环境不支持浏览器音频转换：请提供 16kHz 单声道 PCM16 WAV，或改用字幕/文本导入')
       }
-      if (file.size > 300 * 1024 * 1024) throw new Error('音频文件超过 300 MB：请先转成 16kHz WAV 或导入字幕')
+      const buffer = await file.arrayBuffer()
+      // MP4/M4A：先读 moov/mvhd 里的时长，超限直接拒绝（避免完整解码时内存爆掉）。
+      const probeMp4Duration = (view, bytes) => {
+        const readType = offset => String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7])
+        const total = bytes.byteLength
+        let offset = 0
+        while (offset + 8 <= total) {
+          let size = view.getUint32(offset, false)
+          if (size === 1 && offset + 16 <= total) {
+            const high = view.getUint32(offset + 8, false)
+            const low = view.getUint32(offset + 12, false)
+            size = high * 4294967296 + low
+          } else if (size === 0) {
+            size = total - offset
+          }
+          if (size < 8) return undefined
+          if (readType(offset) === 'moov') {
+            let inner = offset + 8
+            const end = Math.min(total, offset + size)
+            while (inner + 8 <= end) {
+              const innerSize = view.getUint32(inner, false)
+              if (innerSize < 8) return undefined
+              if (readType(inner) === 'mvhd') {
+                const version = view.getUint8(inner + 8)
+                if (version === 0) {
+                  const timescale = view.getUint32(inner + 20, false)
+                  const duration = view.getUint32(inner + 24, false)
+                  return timescale > 0 ? duration / timescale : undefined
+                }
+                const timescale = view.getUint32(inner + 28, false)
+                const high = view.getUint32(inner + 32, false)
+                const low = view.getUint32(inner + 36, false)
+                return timescale > 0 ? (high * 4294967296 + low) / timescale : undefined
+              }
+              inner += innerSize
+            }
+            return undefined
+          }
+          offset += size
+        }
+        return undefined
+      }
+      const probe = probeMp4Duration(new DataView(buffer), new Uint8Array(buffer))
+      if (probe !== undefined && probe > 25 * 60) {
+        throw new Error('音频约 ' + Math.round(probe / 60) + ' 分钟，超过界面转换建议上限（25 分钟）：请先转成 16kHz WAV 并分段上传，或使用字幕导入')
+      }
+      if (file.size > 80 * 1024 * 1024) {
+        throw new Error('压缩音频超过 80 MB，界面转换可能内存不足：请先转成 16kHz WAV 并分段')
+      }
       const context = new AudioContextCtor()
       let decoded
       try {
-        decoded = await context.decodeAudioData(await file.arrayBuffer())
+        decoded = await context.decodeAudioData(buffer)
       } catch (error) {
         throw new Error('浏览器无法解码这个音频（可能需要先转成 WAV）：' + String((error && error.message) || error))
       } finally {
