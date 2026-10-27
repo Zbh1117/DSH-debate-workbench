@@ -549,6 +549,19 @@ const exportedReview = await call('debate_review', { action: 'export', reviewId:
 check('复盘 Markdown 含三票与环节复盘', exportedReview.markdown.includes('印象票') && exportedReview.markdown.includes('环节票') && exportedReview.markdown.includes('决胜票') && exportedReview.markdown.includes('环节复盘'), exportedReview.path.slice(-60))
 check('判比赛免责声明写入', String(finalRead.review.judge.disclaimer).includes('模拟评委'), finalRead.review.judge.disclaimer)
 
+/* 非 WAV 录音的转写提示（M4A 需先在界面转换或先转 WAV） */
+const m4aAudio = path.join(workspace, 'fake-match.m4a')
+fs.writeFileSync(m4aAudio, Buffer.alloc(4096, 1))
+const m4aReview = await call('debate_review', { action: 'create', title: 'M4A 转写提示测试', audioPath: m4aAudio })
+let m4aHint = ''
+try {
+  await call('debate_review', { action: 'transcribe', reviewId: m4aReview.reviewId })
+} catch (error) {
+  m4aHint = String(error)
+}
+check('非 WAV 录音转写给出转换提示', m4aHint.includes('16kHz') && m4aHint.includes('WAV'), m4aHint.slice(0, 200))
+await call('debate_review', { action: 'delete', reviewId: m4aReview.reviewId })
+
 const cleanupStt = await call('debate_review', { action: 'delete', reviewId: sttReview.reviewId })
 const cleanupSrt = await call('debate_review', { action: 'delete', reviewId: srtReview.reviewId })
 check('复盘清理（含录音）', cleanupStt.audioRemoved === true && cleanupSrt.audioRemoved === false, JSON.stringify({ stt: cleanupStt, srt: cleanupSrt }))

@@ -1,6 +1,6 @@
 {
   "name": "dsh-debate-workbench",
-  "version": "0.7.0-beta.1",
+  "version": "0.7.0-beta.2",
   "description": "辩论备赛工作台：复用 DebateWeaver 的论证树/证据卡/攻防框/五维评估模型，在 DSH 里提供工具、API 与原生右栏工作台界面",
   "type": "module",
   "main": "lib/index.js",

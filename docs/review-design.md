@@ -253,6 +253,20 @@
 - 录音默认 `.gitignore` 忽略；复盘 JSON 只记录相对路径与大小/时长
 - 隐私：录音仅存本地；若用户选择云 STT，UI 必须显式提示"音频将发送至第三方"
 
+### 6.2.1 压缩音频（M4A/MP3）自动转换
+
+- DSH 内置 SenseVoice provider 只接受 16kHz 单声道 PCM16 WAV，因此**非 WAV 录音在界面端转换**：
+  - 浏览器 `decodeAudioData` 解码（Chromium 支持 M4A/AAC、MP3、OGG 等；Electron 自带解码器）
+  - `OfflineAudioContext(1, frames, 16000)` 重采样为 16kHz 单声道
+  - 编码为 PCM16 WAV 后上传（宿主只保存 WAV，原文件不入库）
+- 限制：界面转换上限 30 分钟音频（解码后的浮点缓冲占用内存）；更长的录音建议先用外部工具转 16kHz WAV 并按环节切分
+- 宿主侧兜底：若录音不是 WAV（旧数据/命令行上传），`action=transcribe` 会给出明确提示（界面重新上传自动转换 / 先转 WAV / 改用字幕导入）
+
+### 6.4 与对话联动
+
+- 客户端在 `conversation.composer.dock` 槽位注册「讨论复盘」入口：读取最新复盘，把讨论提示词通过 `inputActions.setDraft`/`insertText` 填入输入框（不自动发送），用户确认后发送
+- 对话中模型也可以直接 `debate_review(action=read)` 读取复盘数据展开讨论；复盘 JSON 是唯一事实来源
+
 ### 6.3 转写失败/降级
 
 - `speechToText` 不可用 → 复盘页提示"启用 DSH 官方语音插件后可用自动转写"，文本/字幕导入不受影响

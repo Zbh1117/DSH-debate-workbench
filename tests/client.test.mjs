@@ -197,6 +197,8 @@ const launcherSlot = slotRegistrations.find(item => item.options.name === 'conve
 const footerSlot = slotRegistrations.find(item => item.options.name === 'sidebar.footer.action')
 check('注册右栏内容槽位（key=类型 id）', bodySlot !== undefined && bodySlot.options.key === 'dsh-debate-workbench/tab', JSON.stringify(bodySlot?.options))
 check('注册右栏标题槽位', titleSlot !== undefined && titleSlot.options.key === 'dsh-debate-workbench/tab', JSON.stringify(titleSlot?.options))
+const dockSlot = slotRegistrations.find(item => item.options.name === 'conversation.composer.dock')
+check('注册对话输入框旁的讨论入口', dockSlot !== undefined && dockSlot.options.id === 'dsh-debate-workbench/discuss', JSON.stringify(dockSlot?.options))
 check('不再占用输入框/侧栏底部槽位', launcherSlot === undefined && footerSlot === undefined, JSON.stringify(slotRegistrations.map(item => item.options.name)))
 
 const guideEntries = Array.isArray(tabTypes[0]?.guide) ? tabTypes[0].guide : []

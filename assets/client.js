@@ -272,6 +272,100 @@
           return h('span', null, '辩论工作台')
         }
 
+        /* ---------- 对话输入框旁的「讨论复盘」入口 ---------- */
+        function DiscussDock(props) {
+          var inputActions = props && props.inputActions
+          var [state, setState] = React.useState('idle')
+          var [message, setMessage] = React.useState('')
+          var busy = state === 'working'
+          var run = function () {
+            if (busy) return
+            setState('working')
+            setMessage('')
+            fetch(API_BASE + '/reviews', { cache: 'no-store' })
+              .then(function (response) {
+                return response.json()
+              })
+              .then(function (payload) {
+                var list = payload && Array.isArray(payload.reviews) ? payload.reviews : []
+                if (list.length === 0) {
+                  setState('idle')
+                  setMessage('还没有复盘记录：先在右栏「辩论工作台 → 复盘」建一条')
+                  return
+                }
+                var review = list[0]
+                var prompt = [
+                  '请先用 debate_review(action=read, reviewId=' + review.id + ') 读取我的比赛复盘「' + review.title + '」，然后以辩论评委/教练视角和我讨论：',
+                  '1) 判票理由是否站得住（三票：印象/环节/决胜），有没有明显误判；',
+                  '2) 环节复盘里最关键的两个问题具体怎么改；',
+                  '3) 下一场模辩最该练什么（给可执行的训练任务）。',
+                ].join('\n')
+                var inserted = false
+                try {
+                  if (inputActions && typeof inputActions.setDraft === 'function') {
+                    inserted = inputActions.setDraft(prompt) !== false
+                  }
+                  if (!inserted && inputActions && typeof inputActions.insertText === 'function') {
+                    inserted = inputActions.insertText(prompt, inputActions.captureInsertion()) === true
+                  }
+                } catch (error) {
+                  report('discuss-insert-failed', (error && error.message) || String(error))
+                }
+                if (inserted) {
+                  setState('done')
+                  setMessage('已填入输入框，按发送即可')
+                  return
+                }
+                if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                  navigator.clipboard
+                    .writeText(prompt)
+                    .then(function () {
+                      setState('done')
+                      setMessage('输入框不可写，提示词已复制，粘贴发送即可')
+                    })
+                    .catch(function () {
+                      setState('done')
+                      setMessage('已生成提示词，请到对话框手动提问')
+                    })
+                  return
+                }
+                setState('done')
+                setMessage('已生成提示词，请到对话框手动提问')
+              })
+              .catch(function (error) {
+                setState('idle')
+                setMessage('读取复盘失败：' + ((error && error.message) || String(error)))
+                report('discuss-failed', (error && error.message) || String(error))
+              })
+          }
+          var label = busy ? '讨论复盘…' : state === 'done' ? '讨论复盘 ✓' : '讨论复盘'
+          return h(
+            'div',
+            { style: { display: 'flex', alignItems: 'center', gap: 6, font: '11.5px/1.4 system-ui, sans-serif' } },
+            h(
+              'button',
+              {
+                type: 'button',
+                onClick: run,
+                title: '读取最新一条比赛复盘，把讨论提示词填进输入框（不自动发送）',
+                style: {
+                  appearance: 'none',
+                  border: '1px solid rgba(124,140,255,0.5)',
+                  background: 'rgba(124,140,255,0.12)',
+                  color: 'inherit',
+                  borderRadius: 999,
+                  padding: '3px 10px',
+                  font: 'inherit',
+                  cursor: busy ? 'progress' : 'pointer',
+                  whiteSpace: 'nowrap',
+                },
+              },
+              label,
+            ),
+            message === '' ? null : h('span', { style: { opacity: 0.7, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, message),
+          )
+        }
+
         /* ---------- 插件装配 ---------- */
         function apply(ctx) {
           var disposers = []
@@ -325,6 +419,13 @@
             push(
               ctx.slots.inject('sidebar.right.pane.tab.title', function () {
                 return ctx.slots.register({ name: 'sidebar.right.pane.tab.title', key: TAB_ID }, WorkbenchTabTitle)
+              }),
+            )
+
+            // 2.5) 对话输入框旁放一个「讨论复盘」入口：把最新复盘接回对话（只填提示词，不自动发送）。
+            push(
+              ctx.slots.inject('conversation.composer.dock', function () {
+                return ctx.slots.register({ name: 'conversation.composer.dock', id: PACKAGE_ID + '/discuss', order: 6 }, DiscussDock)
               }),
             )
 

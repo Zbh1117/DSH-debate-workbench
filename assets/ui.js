@@ -493,6 +493,97 @@ export function createWorkbench({ React, api }) {
       [state],
     )
 
+    /* ---------- 复盘音频：任意浏览器可解码音频（m4a/mp3/ogg…）→ 16kHz 单声道 PCM16 WAV ---------- */
+    const readFileHead = async file => {
+      try {
+        return new Uint8Array(await file.slice(0, 64).arrayBuffer())
+      } catch (error) {
+        return new Uint8Array()
+      }
+    }
+    const isCanonicalWavFile = async file => {
+      const head = await readFileHead(file)
+      if (head.length < 44) return false
+      const ascii = index => String.fromCharCode(head[index], head[index + 1], head[index + 2], head[index + 3])
+      if (ascii(0) !== 'RIFF' || ascii(8) !== 'WAVE') return false
+      const view = new DataView(head.buffer, head.byteOffset, head.byteLength)
+      let offset = 12
+      while (offset + 8 <= head.length) {
+        const id = ascii(offset)
+        const size = view.getUint32(offset + 4, true)
+        const body = offset + 8
+        if (id === 'fmt ' && body + 16 <= head.length) {
+          const code = view.getUint16(body, true)
+          const channels = view.getUint16(body + 2, true)
+          const sampleRate = view.getUint32(body + 4, true)
+          const bits = view.getUint16(body + 14, true)
+          return code === 1 && channels === 1 && sampleRate === 16000 && bits === 16
+        }
+        offset = body + size + (size % 2)
+      }
+      return false
+    }
+    const encodePcm16Wav = samples => {
+      const dataBytes = samples.length * 2
+      const buffer = new ArrayBuffer(44 + dataBytes)
+      const view = new DataView(buffer)
+      const writeText = (offset, text) => {
+        for (let index = 0; index < text.length; index += 1) view.setUint8(offset + index, text.charCodeAt(index))
+      }
+      writeText(0, 'RIFF')
+      view.setUint32(4, 36 + dataBytes, true)
+      writeText(8, 'WAVE')
+      writeText(12, 'fmt ')
+      view.setUint32(16, 16, true)
+      view.setUint16(20, 1, true)
+      view.setUint16(22, 1, true)
+      view.setUint32(24, 16000, true)
+      view.setUint32(28, 32000, true)
+      view.setUint16(32, 2, true)
+      view.setUint16(34, 16, true)
+      writeText(36, 'data')
+      view.setUint32(40, dataBytes, true)
+      for (let index = 0; index < samples.length; index += 1) {
+        const value = Math.max(-1, Math.min(1, samples[index]))
+        view.setInt16(44 + index * 2, value < 0 ? value * 0x8000 : value * 0x7fff, true)
+      }
+      return buffer
+    }
+    const convertAudioToWav16k = async file => {
+      const AudioContextCtor = typeof window === 'undefined' ? undefined : window.AudioContext ?? window.webkitAudioContext
+      const OfflineContextCtor = typeof window === 'undefined' ? undefined : window.OfflineAudioContext ?? window.webkitOfflineAudioContext
+      if (typeof AudioContextCtor !== 'function' || typeof OfflineContextCtor !== 'function') {
+        throw new Error('当前环境不支持浏览器音频转换：请提供 16kHz 单声道 PCM16 WAV，或改用字幕/文本导入')
+      }
+      if (file.size > 300 * 1024 * 1024) throw new Error('音频文件超过 300 MB：请先转成 16kHz WAV 或导入字幕')
+      const context = new AudioContextCtor()
+      let decoded
+      try {
+        decoded = await context.decodeAudioData(await file.arrayBuffer())
+      } catch (error) {
+        throw new Error('浏览器无法解码这个音频（可能需要先转成 WAV）：' + String((error && error.message) || error))
+      } finally {
+        try {
+          context.close()
+        } catch (error) {
+          /* ignore */
+        }
+      }
+      if (decoded.duration > 30 * 60) {
+        throw new Error('音频约 ' + Math.round(decoded.duration / 60) + ' 分钟，超过界面转换上限 30 分钟：请先转成 16kHz WAV 并分段，或分段导入')
+      }
+      const frames = Math.max(1, Math.floor(decoded.duration * 16000))
+      const offline = new OfflineContextCtor(1, frames, 16000)
+      const source = offline.createBufferSource()
+      source.buffer = decoded
+      source.connect(offline.destination)
+      source.start(0)
+      const rendered = await offline.startRendering()
+      const samples = rendered.getChannelData(0)
+      const name = String(file.name || 'audio').replace(/\.[^.]+$/, '') + '.16k.wav'
+      return new File([encodePcm16Wav(samples)], name, { type: 'audio/wav' })
+    }
+
     /* ---------- 复盘数据 ---------- */
     /** 拉取复盘列表 + 选中项详情。 */
     const reloadReviews = React.useCallback(
@@ -555,7 +646,15 @@ export function createWorkbench({ React, api }) {
         if (file !== null && file !== undefined) {
           const name = String(file.name ?? '')
           const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : 'wav'
-          await api.reviewAudio(reviewId, ext, file, state?.activeProjectId ?? undefined)
+          let uploadFile = file
+          let uploadExt = ext
+          const canonical = await isCanonicalWavFile(file)
+          if (!canonical) {
+            setNotice('正在把音频转成 16kHz WAV（M4A/MP3 自动转换，长音频需要一点时间）…')
+            uploadFile = await convertAudioToWav16k(file)
+            uploadExt = 'wav'
+          }
+          await api.reviewAudio(reviewId, uploadExt, uploadFile, state?.activeProjectId ?? undefined)
         }
         if (reviewSubtitle.trim() !== '') {
           await api.tool('debate_review', { action: 'import_transcript', reviewId, text: reviewSubtitle })
@@ -1649,7 +1748,7 @@ export function createWorkbench({ React, api }) {
             value: reviewDraft.opponent,
             onChange: event => setReviewDraft(current => ({ ...current, opponent: event.target.value })),
           }),
-          h('div', { className: 'dwb-muted', style: { marginBottom: 4 } }, '录音（可选，转写需 16kHz 单声道 PCM16 WAV）'),
+          h('div', { className: 'dwb-muted', style: { marginBottom: 4 } }, '录音（可选，M4A/MP3 会自动转成 16kHz WAV，转换上限 30 分钟）'),
           h('input', {
             type: 'file',
             accept: '.wav,.m4a,.mp3,.ogg,.webm,.flac,.aac,audio/*',
