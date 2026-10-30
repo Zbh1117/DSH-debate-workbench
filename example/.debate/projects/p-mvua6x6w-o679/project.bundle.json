@@ -1,7 +1,7 @@
 {
   "format": "debateweaver-project",
   "version": 1,
-  "exportedAt": "2026-10-30T01:17:57.548Z",
+  "exportedAt": "2026-10-30T08:27:00.576Z",
   "project": {
     "id": "p-mvua6x6w-o679",
     "title": "AI创作提高了人类创作者的意义",
@@ -9,7 +9,7 @@
     "format": "chinese",
     "status": "active",
     "createdAt": "2026-10-30T01:16:06.920Z",
-    "updatedAt": "2026-10-30T01:17:57.548Z",
+    "updatedAt": "2026-10-30T08:27:00.576Z",
     "argumentTreeId": "tree-92fbaef3-faca-4343-a7a2-174b9deb0c1b"
   },
   "argumentTree": {
@@ -20,34 +20,17 @@
         "id": "node-ec7dbc38-7739-420f-bb1a-d8f1665eb06b",
         "type": "stance",
         "position": {
-          "x": 18,
-          "y": 131
+          "x": -46,
+          "y": 109
         },
         "data": {
           "label": "AI创作提高了人类创作者存在的意义"
         }
-      },
-      {
-        "id": "node-e87faca5-a170-422d-9336-4602269aa98b",
-        "type": "claim",
-        "position": {
-          "x": 278,
-          "y": 279
-        },
-        "data": {
-          "label": "新"
-        }
       }
     ],
-    "edges": [
-      {
-        "id": "edge-380736dd-dfc3-47d3-9172-5f4922207153",
-        "source": "node-ec7dbc38-7739-420f-bb1a-d8f1665eb06b",
-        "target": "node-e87faca5-a170-422d-9336-4602269aa98b"
-      }
-    ],
+    "edges": [],
     "createdAt": "2026-10-30T01:16:06.920Z",
-    "updatedAt": "2026-10-30T01:17:57.548Z"
+    "updatedAt": "2026-10-30T08:27:00.576Z"
   },
   "attackDefenseBoxes": [],
   "nodeEvidenceLinks": [],

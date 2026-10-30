@@ -135,6 +135,72 @@ function nodeMetrics(node) {
   return { width, height, lines, wrapped: true }
 }
 
+/**
+ * 连线几何：按两个节点的相对位置自适应选边，返回三次贝塞尔路径与端点/中点。
+ *  - 横向分离足够大：源右 → 目标左（或反向）
+ *  - 否则纵向：源下 → 目标上（或反向）
+ *
+ * @param {any} from 源节点（取尺寸）
+ * @param {any} to 目标节点
+ * @param {{x:number,y:number}} fromPos 源节点坐标（拖动时用实时坐标）
+ * @param {{x:number,y:number}} toPos 目标节点坐标
+ * @returns {{d:string,sx:number,sy:number,ex:number,ey:number,mx:number,my:number}}
+ */
+function edgeGeometry(from, to, fromPos, toPos) {
+  const fromMetrics = nodeMetrics(from)
+  const toMetrics = nodeMetrics(to)
+  const fromLeft = Number(fromPos.x) || 0
+  const fromTop = Number(fromPos.y) || 0
+  const toLeft = Number(toPos.x) || 0
+  const toTop = Number(toPos.y) || 0
+  const fromCx = fromLeft + fromMetrics.width / 2
+  const fromCy = fromTop + fromMetrics.height / 2
+  const toCx = toLeft + toMetrics.width / 2
+  const toCy = toTop + toMetrics.height / 2
+  const gapX = Math.abs(toCx - fromCx) - (fromMetrics.width + toMetrics.width) / 2
+  const gapY = Math.abs(toCy - fromCy) - (fromMetrics.height + toMetrics.height) / 2
+
+  if (gapX >= 8 || gapY < 8) {
+    // 横向走线
+    const rightward = toCx >= fromCx
+    const sx = rightward ? fromLeft + fromMetrics.width : fromLeft
+    const ex = rightward ? toLeft : toLeft + toMetrics.width
+    const sy = fromCy
+    const ey = toCy
+    const span = Math.max(40, Math.abs(ex - sx) * 0.45)
+    const c1 = rightward ? sx + span : sx - span
+    const c2 = rightward ? ex - span : ex + span
+    return {
+      d: `M ${sx} ${sy} C ${c1} ${sy}, ${c2} ${ey}, ${ex} ${ey}`,
+      sx,
+      sy,
+      ex,
+      ey,
+      mx: (sx + ex) / 2,
+      my: (sy + ey) / 2,
+    }
+  }
+
+  // 纵向走线（节点上下叠放）
+  const downward = toCy >= fromCy
+  const sx = fromCx
+  const ex = toCx
+  const sy = downward ? fromTop + fromMetrics.height : fromTop
+  const ey = downward ? toTop : toTop + toMetrics.height
+  const span = Math.max(36, Math.abs(ey - sy) * 0.45)
+  const c1 = downward ? sy + span : sy - span
+  const c2 = downward ? ey - span : ey + span
+  return {
+    d: `M ${sx} ${sy} C ${sx} ${c1}, ${ex} ${c2}, ${ex} ${ey}`,
+    sx,
+    sy,
+    ex,
+    ey,
+    mx: (sx + ex) / 2,
+    my: (sy + ey) / 2,
+  }
+}
+
 /** 在给定像素宽度内把标题裁成「…」结尾。 */
 function fitLabel(label, maxWidth) {
   const source = String(label ?? '')
@@ -262,6 +328,16 @@ function ensureStyles(doc) {
   .dwb-btn[data-quiet="1"]:hover { background: rgba(124,140,255,0.12); border-color: var(--dsw-alias-border-l1, rgba(150,165,220,0.2)); color: var(--dsw-alias-label-primary,#e8ebf5); }
   .dwb-float-glass { backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); }
   .dwb-node text { pointer-events:none; font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  .dwb-edge-hit { cursor:pointer; }
+  .dwb-edge:hover .dwb-edge-line { stroke: rgba(124,140,255,0.85); stroke-width: 2.1; }
+  .dwb-edge-line { transition: stroke 150ms ease-out, stroke-width 150ms ease-out; }
+  .dwb-edge-selected { animation: dwb-edge-dash 900ms linear infinite; }
+  @keyframes dwb-edge-dash { to { stroke-dashoffset: -24; } }
+  .dwb-edge-delete { cursor:pointer; }
+  .dwb-edge-delete:hover circle { fill: rgba(255,107,129,0.9); }
+  .dwb-port { fill: rgba(20,22,31,0.96); stroke: var(--dsw-alias-brand-primary, #7c8cff); stroke-width: 1.6; cursor: crosshair; }
+  .dwb-port:hover { fill: var(--dsw-alias-brand-primary, #7c8cff); }
+  .dwb-rubber { pointer-events:none; }
   .dwb-foot { flex:0 0 auto; padding:4px 10px; border-top:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.15));
     color:var(--dsw-alias-label-secondary,#99a1bd); font-size:11px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .dwb-error { color:#ff8497; }
@@ -365,6 +441,9 @@ export function createWorkbench({ React, api }) {
     const [notice, setNotice] = React.useState(null)
     const [syncedAt, setSyncedAt] = React.useState(null)
     const [linkSource, setLinkSource] = React.useState(null)
+    const [selectedEdgeId, setSelectedEdgeId] = React.useState(null)
+    // 从节点端口拖拽连线时的临时状态：{ sourceId, fromRight, anchor, pointer }
+    const [linkDrag, setLinkDrag] = React.useState(null)
     const [hoveredId, setHoveredId] = React.useState(null)
     // 多题目：所有题目摘要 / 当前题待办 / 公共证据库
     const [projectsDetail, setProjectsDetail] = React.useState([])
@@ -1027,6 +1106,7 @@ export function createWorkbench({ React, api }) {
 
     const selectNode = id => {
       setSelectedId(id)
+      setSelectedEdgeId(null)
       if (id === null || id === undefined) {
         setNotice(undefined)
         return
@@ -1051,15 +1131,33 @@ export function createWorkbench({ React, api }) {
     // Esc 关闭编辑窗（在输入框里按 Esc 不生效，避免打断输入）。
     React.useEffect(() => {
       const onKeyDown = event => {
-        if (event.key !== 'Escape' || selectedId === null) return
+        if (event.key !== 'Escape') return
+        if (selectedId === null && selectedEdgeId === null) return
         const target = event.target
         const tag = target !== null && target !== undefined ? String(target.tagName || '').toLowerCase() : ''
         if (tag === 'input' || tag === 'textarea' || tag === 'select') return
         setSelectedId(null)
+        setSelectedEdgeId(null)
+        setLinkDrag(null)
       }
       window.addEventListener('keydown', onKeyDown)
       return () => window.removeEventListener('keydown', onKeyDown)
-    }, [selectedId])
+    }, [selectedId, selectedEdgeId])
+
+    // Delete / Backspace 删除选中的连线（节点保留）
+    React.useEffect(() => {
+      if (selectedEdgeId === null) return undefined
+      const onKeyDown = event => {
+        if (event.key !== 'Delete' && event.key !== 'Backspace') return
+        const target = event.target
+        const tag = target !== null && target !== undefined ? String(target.tagName || '').toLowerCase() : ''
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+        event.preventDefault()
+        removeEdge(selectedEdgeId)
+      }
+      window.addEventListener('keydown', onKeyDown)
+      return () => window.removeEventListener('keydown', onKeyDown)
+    }, [selectedEdgeId])
 
     const onNodeClick = node => {
       if (linkSource !== null && linkSource !== node.id) {
@@ -1168,11 +1266,72 @@ export function createWorkbench({ React, api }) {
       }
     }
 
+    /* ---------- 连线：端口拖拽 / 删除 ---------- */
+
+    /** 屏幕坐标 → 模型坐标（考虑画布偏移与缩放）。 */
+    const screenToModel = (clientX, clientY) => {
+      const node = canvasRef.current
+      const rect = node === null ? { left: 0, top: 0 } : node.getBoundingClientRect()
+      const k = view.k > 0 ? view.k : 1
+      return { x: (clientX - rect.left - view.x) / k, y: (clientY - rect.top - view.y) / k }
+    }
+
+    /**
+     * 从节点端口按下开始连线：拖到任意节点的任意位置松手即可建立连线。
+     * 右侧端口 = 以本节点为源；左侧端口 = 以本节点为目标（反向连线）。
+     */
+    const startLinkDrag = (event, node, fromRight) => {
+      event.stopPropagation()
+      if (event.button !== undefined && event.button !== 0) return
+      const metrics = nodeMetrics(node)
+      const position = { x: Number(node.position?.x) || 0, y: Number(node.position?.y) || 0 }
+      const anchor = {
+        x: fromRight ? position.x + metrics.width : position.x,
+        y: position.y + metrics.height / 2,
+      }
+      setSelectedId(null)
+      setSelectedEdgeId(null)
+      setLinkDrag({ sourceId: node.id, fromRight, anchor, pointer: anchor })
+      const move = e => {
+        const pointer = screenToModel(e.clientX, e.clientY)
+        setLinkDrag(current => (current === null ? current : { ...current, pointer }))
+      }
+      const finish = e => {
+        window.removeEventListener('pointermove', move)
+        window.removeEventListener('pointerup', finish)
+        window.removeEventListener('pointercancel', finish)
+        const element = typeof document === 'undefined' ? null : document.elementFromPoint(e.clientX, e.clientY)
+        const hit = element !== null && element !== undefined && typeof element.closest === 'function' ? element.closest('[data-node-id]') : null
+        const targetId = hit === null ? '' : String(hit.getAttribute('data-node-id') ?? '')
+        setLinkDrag(null)
+        if (targetId === '' || targetId === node.id) return
+        const source = fromRight ? node.id : targetId
+        const target = fromRight ? targetId : node.id
+        api
+          .tool('debate_tree', { action: 'connect', source, target })
+          .then(() => {
+            setNotice('已连线（可点击连线删除，节点不受影响）')
+            setError(null)
+            return reload()
+          })
+          .catch(problem => setError(String(problem?.message ?? problem)))
+      }
+      window.addEventListener('pointermove', move)
+      window.addEventListener('pointerup', finish)
+      window.addEventListener('pointercancel', finish)
+    }
+
+    /** 删除一条连线（只删边，不动节点）。 */
+    const removeEdge = edgeId => {
+      setSelectedEdgeId(null)
+      run('debate_tree', { action: 'disconnect', edgeId }, '连线已删除（节点保留）')
+    }
+
     /* ---------- 论证树 ---------- */
     const startPan = event => {
       if (event.button !== 0) return
       const target = event.target
-      if (target !== null && typeof target.closest === 'function' && target.closest('[data-node-id], .dwb-float, .dwb-zoom') !== null) return
+      if (target !== null && typeof target.closest === 'function' && target.closest('[data-node-id], .dwb-float, .dwb-zoom, .dwb-edge, .dwb-port') !== null) return
       const startX = event.clientX
       const startY = event.clientY
       const origin = view
@@ -1242,6 +1401,15 @@ export function createWorkbench({ React, api }) {
             }),
             h('button', { type: 'button', className: 'dwb-btn', 'data-primary': '1', disabled: busy, onClick: addNode },
               selected === null ? '添加节点' : '加为子节点'),
+            selectedEdgeId === null
+              ? null
+              : h('button', {
+                  type: 'button',
+                  className: 'dwb-btn',
+                  'data-danger': '1',
+                  disabled: busy,
+                  onClick: () => removeEdge(selectedEdgeId),
+                }, '删除连线'),
             linkSource === null
               ? null
               : h('button', { type: 'button', className: 'dwb-btn', 'data-danger': '1', onClick: () => setLinkSource(null) }, '取消连线'),
@@ -1260,6 +1428,7 @@ export function createWorkbench({ React, api }) {
                 if (closest('[data-node-id]') !== null) return
                 if (closest('.dwb-float, .dwb-zoom, .dwb-toolbar') !== null) return
                 selectNode(null)
+                setSelectedEdgeId(null)
                 if (linkSource !== null) setLinkSource(null)
               },
               onDoubleClick: event => {
@@ -1325,23 +1494,96 @@ export function createWorkbench({ React, api }) {
                       const from = nodes.find(item => item.id === edge.source)
                       const to = nodes.find(item => item.id === edge.target)
                       if (from === undefined || to === undefined) return null
-                      const x1 = (Number(from.position?.x) || 0) + nodeMetrics(from).width
-                      const y1 = (Number(from.position?.y) || 0) + nodeMetrics(from).height / 2
-                      const x2 = Number(to.position?.x) || 0
-                      const y2 = (Number(to.position?.y) || 0) + nodeMetrics(to).height / 2
-                      const mid = (x1 + x2) / 2
-                      const hot = selectedId !== null && (edge.source === selectedId || edge.target === selectedId)
-                      return h('path', {
-                        key: edge.id,
-                        d: `M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`,
-                        fill: 'none',
-                        stroke: hot ? brandColor : 'rgba(150,165,220,0.26)',
-                        strokeWidth: hot ? 2 : 1.4,
-                        strokeLinecap: 'round',
-                        markerEnd: hot ? 'url(#dwb-arrow-hot)' : 'url(#dwb-arrow)',
-                        style: { transition: 'stroke 160ms ease-out, stroke-width 160ms ease-out' },
-                      })
+                      const fromPosition =
+                        drag !== null && drag.id === from.id
+                          ? { x: drag.x, y: drag.y }
+                          : { x: Number(from.position?.x) || 0, y: Number(from.position?.y) || 0 }
+                      const toPosition =
+                        drag !== null && drag.id === to.id
+                          ? { x: drag.x, y: drag.y }
+                          : { x: Number(to.position?.x) || 0, y: Number(to.position?.y) || 0 }
+                      const geometry = edgeGeometry(from, to, fromPosition, toPosition)
+                      const touching = selectedId !== null && (edge.source === selectedId || edge.target === selectedId)
+                      const selectedEdge = edge.id === selectedEdgeId
+                      const strong = selectedEdge || touching
+                      const stroke = selectedEdge ? brandColor : touching ? hexToRgba(brandColor, 0.82) : 'rgba(150,165,220,0.30)'
+                      const width = selectedEdge ? 2.6 : touching ? 2 : 1.5
+                      return h(
+                        'g',
+                        { key: edge.id, className: 'dwb-edge', 'data-edge-id': edge.id },
+                        // 透明加粗命中区：细线也好点中
+                        h('path', {
+                          d: geometry.d,
+                          fill: 'none',
+                          stroke: 'rgba(0,0,0,0)',
+                          strokeWidth: 20,
+                          strokeLinecap: 'round',
+                          className: 'dwb-edge-hit',
+                          onPointerDown: event => event.stopPropagation(),
+                          onClick: event => {
+                            event.stopPropagation()
+                            setSelectedId(null)
+                            setSelectedEdgeId(edge.id)
+                            setNotice(`已选中连线：「${from.data?.label ?? ''}」→「${to.data?.label ?? ''}」｜Delete 删除，节点保留`)
+                          },
+                        }),
+                        selectedEdge
+                          ? h('path', {
+                              d: geometry.d,
+                              fill: 'none',
+                              stroke: hexToRgba(brandColor, 0.20),
+                              strokeWidth: width + 7,
+                              strokeLinecap: 'round',
+                            })
+                          : null,
+                        h('path', {
+                          d: geometry.d,
+                          fill: 'none',
+                          stroke,
+                          strokeWidth: width,
+                          strokeLinecap: 'round',
+                          strokeDasharray: selectedEdge ? '7 5' : undefined,
+                          markerEnd: strong ? 'url(#dwb-arrow-hot)' : 'url(#dwb-arrow)',
+                          className: selectedEdge ? 'dwb-edge-line dwb-edge-selected' : 'dwb-edge-line',
+                        }),
+                        // 起点圆点：强调方向
+                        h('circle', {
+                          cx: geometry.sx,
+                          cy: geometry.sy,
+                          r: selectedEdge ? 3.6 : 2.6,
+                          fill: strong ? brandColor : 'rgba(150,165,220,0.45)',
+                          className: 'dwb-rubber',
+                        }),
+                        selectedEdge
+                          ? h(
+                              'g',
+                              {
+                                className: 'dwb-edge-delete',
+                                transform: `translate(${geometry.mx}, ${geometry.my})`,
+                                onPointerDown: event => event.stopPropagation(),
+                                onClick: event => {
+                                  event.stopPropagation()
+                                  removeEdge(edge.id)
+                                },
+                              },
+                              h('circle', { r: 10, fill: 'rgba(24,27,38,0.94)', stroke: 'rgba(255,107,129,0.75)', strokeWidth: 1.2 }),
+                              h('path', { d: 'M -3.6 -3.6 L 3.6 3.6 M 3.6 -3.6 L -3.6 3.6', stroke: '#ff8497', strokeWidth: 1.8, strokeLinecap: 'round' }),
+                              h('title', null, '删除这条连线（节点保留）'),
+                            )
+                          : null,
+                      )
                     }),
+                    linkDrag === null
+                      ? null
+                      : h('path', {
+                          className: 'dwb-rubber',
+                          d: `M ${linkDrag.anchor.x} ${linkDrag.anchor.y} L ${linkDrag.pointer.x} ${linkDrag.pointer.y}`,
+                          fill: 'none',
+                          stroke: brandColor,
+                          strokeWidth: 1.8,
+                          strokeDasharray: '5 4',
+                          strokeLinecap: 'round',
+                        }),
                     nodes.map(node => {
                       const dragging = drag !== null && drag.id === node.id
                       const position = dragging ? { x: drag.x, y: drag.y } : { x: Number(node.position?.x) || 0, y: Number(node.position?.y) || 0 }
@@ -1417,6 +1659,29 @@ export function createWorkbench({ React, api }) {
                             ),
                           ),
                         ),
+                        // 连线端口画在节点内容之上：悬停/选中节点时出现。
+                        // 右端口 = 本节点为源，左端口 = 本节点为目标（反向连线）。
+                        hovered || active || linkDrag !== null
+                          ? h(
+                              'g',
+                              { className: 'dwb-ports' },
+                              h('circle', {
+                                className: 'dwb-port',
+                                cx: metrics.width,
+                                cy: metrics.height / 2,
+                                r: 5.5,
+                                onPointerDown: event => startLinkDrag(event, node, true),
+                              }),
+                              h('circle', {
+                                className: 'dwb-port',
+                                cx: 0,
+                                cy: metrics.height / 2,
+                                r: 5.5,
+                                onPointerDown: event => startLinkDrag(event, node, false),
+                              }),
+                              h('title', null, '拖到任意节点建立连线'),
+                            )
+                          : null,
                       )
                     }),
                   ),
@@ -2790,7 +3055,13 @@ export function createWorkbench({ React, api }) {
             { className: 'dwb-banner', style: { background: 'rgba(255,159,10,0.18)', color: '#ffd08a' } },
             '界面已更新，但宿主端还是旧版本：题目切换 / 新建题目 / 公共库要**完全退出 DSH 重启**后才可用。',
           ),
-      linkSource === null ? null : h('div', { className: 'dwb-banner' }, '连线模式：点击目标节点建立「来源 → 目标」的父子连线；点空白处取消。'),
+      linkSource === null
+        ? null
+        : h(
+            'div',
+            { className: 'dwb-banner' },
+            '连线模式：点击任意节点建立「来源 → 目标」连线（可以跨层级，只要不成环）；点空白处取消。也可以直接从节点左右端口拖拽连线。',
+          ),
       content,
       h(
         'div',

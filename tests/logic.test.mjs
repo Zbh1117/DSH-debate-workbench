@@ -226,6 +226,26 @@ check('move_node 拒绝非法坐标', badMove.includes('必须是数字') || bad
 await call('debate_tree', { action: 'remove_node', nodeId: placed.node.id })
 const layout = await call('debate_tree', { action: 'auto_layout', options: { columnGap: 280, rowGap: 120 } })
 check('自动布局', layout.nodes === 6 && layout.columns >= 3, JSON.stringify(layout))
+/* 连线：允许任意两个节点互连（跨层级），且能只删连线不删节点 */
+const crossEdge = await call('debate_tree', { action: 'connect', source: c2.node.id, target: evNode.node.id })
+check('任意节点可互连（跨层级）', crossEdge.edge.source === c2.node.id && crossEdge.edge.target === evNode.node.id, JSON.stringify(crossEdge.edge))
+const nodesBeforeDisconnect = (await call('debate_project', { action: 'read' })).bundle.argumentTree.nodes.length
+await call('debate_tree', { action: 'disconnect', edgeId: crossEdge.edge.id })
+const afterDisconnect = (await call('debate_project', { action: 'read' })).bundle
+check(
+  '删除连线后节点数量不变',
+  afterDisconnect.argumentTree.nodes.length === nodesBeforeDisconnect &&
+    afterDisconnect.argumentTree.edges.every(edge => edge.id !== crossEdge.edge.id),
+  JSON.stringify({ nodes: afterDisconnect.argumentTree.nodes.length, edges: afterDisconnect.argumentTree.edges.length }),
+)
+let cycleError = ''
+try {
+  await call('debate_tree', { action: 'connect', source: c1.node.id, target: stanceId })
+} catch (error) {
+  cycleError = String(error)
+}
+check('反向连线成环会被拒绝', /环/.test(cycleError), cycleError.slice(0, 120))
+
 const treeRead = await call('debate_tree', { action: 'read' })
 check('树大纲包含节点', treeRead.markdown.includes('AI 提升生产率') && treeRead.markdown.includes('立场'), treeRead.markdown.slice(0, 200))
 
