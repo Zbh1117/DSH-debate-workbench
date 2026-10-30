@@ -352,6 +352,32 @@ const reviewElement = Workbench({})
 const reviewText = JSON.stringify(reviewElement)
 check('复盘标签页可渲染', reviewText.includes('复盘记录') && reviewText.includes('新建复盘') && reviewText.includes('创建复盘') && reviewText.includes('还没有复盘'), reviewText.slice(0, 300))
 
+/* ---- 长文本节点 / 连线几何（直接测 ui.js 导出的纯函数） ---- */
+const internals = uiModule.__internals
+const longSentence = '证据：某研究机构 2024 年对 1200 家制造业企业做了三年追踪，发现引入自动化产线后单位工时产出平均提升 12%，但同时一线操作岗位减少 9%，技能结构向设备维护与数据分析迁移。'
+// 拼到足够长（> 1000 字），确保在 420px 宽下超过 6 行
+const longLabel = longSentence.repeat(10)
+const longMetrics = internals.nodeMetrics({ type: 'evidence', data: { label: longLabel, details: { wrap: 'true' } } })
+check('换行上限已放宽（> 6 行）', internals.NODE_MAX_LINES > 6, String(internals.NODE_MAX_LINES))
+check('长文本节点按多行渲染', longMetrics.lines.length > 6, String(longMetrics.lines.length))
+check('长文本节点高度随行数增长', longMetrics.height > 100, String(longMetrics.height))
+check('长文本节点没有被截断', longMetrics.truncated === false, String(longMetrics.truncated))
+check('节点最大宽度已放宽到 >= 420', internals.NODE_MAX_W >= 420, String(internals.NODE_MAX_W))
+const compactMetrics = internals.nodeMetrics({ type: 'evidence', data: { label: longLabel, details: { wrap: 'true', compact: 'true' } } })
+check('精简显示限制在 6 行并标记截断', compactMetrics.lines.length === internals.NODE_COMPACT_LINES && compactMetrics.truncated === true, JSON.stringify({ lines: compactMetrics.lines.length, truncated: compactMetrics.truncated }))
+check('超长单行标题会被标记截断', internals.nodeMetrics({ type: 'evidence', data: { label: longLabel } }).truncated === true, '')
+
+const edgeNode = { type: 'claim', data: { label: 'x' } }
+const rightward = internals.edgeGeometry(edgeNode, edgeNode, { x: 0, y: 0 }, { x: 520, y: 0 })
+const leftward = internals.edgeGeometry(edgeNode, edgeNode, { x: 520, y: 0 }, { x: 0, y: 0 })
+const vertical = internals.edgeGeometry(edgeNode, edgeNode, { x: 0, y: 0 }, { x: 0, y: 300 })
+const numbers = value => (String(value).match(/-?\d+(\.\d+)?/g) ?? []).map(Number)
+check('连线路径无 NaN', [rightward, leftward, vertical].every(item => numbers(item.d).every(Number.isFinite) && numbers(item.d).length >= 8), JSON.stringify([rightward.d, vertical.d]))
+check('右向连线从源右边缘出发', Math.abs(rightward.sx - internals.nodeMetrics(edgeNode).width) < 0.01, JSON.stringify({ sx: rightward.sx, vy: rightward.sy }))
+check('左向连线改用左边缘（自适应）', leftward.sx === 520 && leftward.ex === internals.nodeMetrics(edgeNode).width, JSON.stringify({ sx: leftward.sx, ex: leftward.ex, width: internals.nodeMetrics(edgeNode).width }))
+check('上下叠放改为纵向走线', Math.abs(vertical.sx - vertical.ex) < 60 && vertical.ey > vertical.sy, JSON.stringify({ sx: vertical.sx, sy: vertical.sy, ex: vertical.ex, ey: vertical.ey }))
+check('连线中点在两端之间', rightward.mx > rightward.sx && rightward.mx < rightward.ex, JSON.stringify({ mx: rightward.mx }))
+
 const foot = children.find(child => child?.props?.className === 'dwb-foot')
 check('底部状态栏存在', foot !== undefined)
 

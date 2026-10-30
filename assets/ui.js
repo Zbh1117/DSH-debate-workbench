@@ -44,10 +44,13 @@ const NODE_W = 190
 const NODE_H = 58
 /** 节点尺寸策略：单行时宽度随文字增长；用户可开启「多行换行」，由行数决定高度。 */
 const NODE_MIN_W = 150
-const NODE_MAX_W = 300
-const NODE_WRAP_W = 280
+const NODE_MAX_W = 460
+const NODE_WRAP_W = 420
 const NODE_LINE_HEIGHT = 16
-const NODE_MAX_LINES = 6
+/** 换行模式默认最多行数（证据/长文本要能整段展示）。 */
+const NODE_MAX_LINES = 28
+/** 节点开了「精简显示」时的行数上限。 */
+const NODE_COMPACT_LINES = 6
 const NODE_LABEL_FONT = '12px system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif'
 
 let measureContext = null
@@ -82,6 +85,12 @@ function measureTextWidth(text, font) {
 /** 是否开启「多行换行」（存在 details.wrap 里，兼容 app 的字符串字典）。 */
 function isWrapEnabled(node) {
   const value = node?.data?.details?.wrap
+  return value === true || value === 'true' || value === '1' || value === 'on'
+}
+
+/** 是否开启「精简显示」（details.compact，超长文本只显示 6 行）。 */
+function isCompactNode(node) {
+  const value = node?.data?.details?.compact
   return value === true || value === 'true' || value === '1' || value === 'on'
 }
 
@@ -120,19 +129,20 @@ function nodeMetrics(node) {
   const labelWidth = measureTextWidth(label, NODE_LABEL_FONT)
   if (!isWrapEnabled(node)) {
     const width = Math.min(NODE_MAX_W, Math.max(NODE_MIN_W, Math.ceil(labelWidth) + 42))
-    return { width, height: NODE_H, lines: [fitLabel(label, width - 34)], wrapped: false }
+    return { width, height: NODE_H, lines: [fitLabel(label, width - 34)], wrapped: false, truncated: measureTextWidth(label, NODE_LABEL_FONT) > width - 34 }
   }
-  const width = Math.min(NODE_MAX_W, Math.max(NODE_MIN_W, Math.ceil(labelWidth) + 42)) <= NODE_WRAP_W
-    ? Math.min(NODE_MAX_W, Math.max(NODE_MIN_W, Math.ceil(labelWidth) + 42))
-    : NODE_WRAP_W
+  const naturalWidth = Math.min(NODE_MAX_W, Math.max(NODE_MIN_W, Math.ceil(labelWidth) + 42))
+  const width = naturalWidth <= NODE_WRAP_W ? naturalWidth : NODE_WRAP_W
   const contentWidth = width - 34
+  const limit = isCompactNode(node) ? NODE_COMPACT_LINES : NODE_MAX_LINES
   let lines = wrapLines(label, contentWidth)
-  if (lines.length > NODE_MAX_LINES) {
-    lines = lines.slice(0, NODE_MAX_LINES)
-    lines[NODE_MAX_LINES - 1] = fitLabel(String(lines[NODE_MAX_LINES - 1]) + '…', contentWidth)
+  const truncated = lines.length > limit
+  if (truncated) {
+    lines = lines.slice(0, limit)
+    lines[limit - 1] = fitLabel(String(lines[limit - 1]) + '…', contentWidth)
   }
   const height = Math.max(NODE_H, 34 + lines.length * NODE_LINE_HEIGHT + 10)
-  return { width, height, lines, wrapped: true }
+  return { width, height, lines, wrapped: true, truncated }
 }
 
 /**
@@ -422,6 +432,22 @@ function renderGlyph(h, kind, color, x, y) {
     default:
       return [h('circle', { key: 'dot', cx, cy, r: 3.4, fill: color })]
   }
+}
+
+/**
+ * 纯逻辑导出：节点尺寸 / 连线几何。生产环境不依赖它，只用于离线测试与调试。
+ * （界面模块是热插拔的，额外导出不会影响加载流程。）
+ */
+export const __internals = {
+  nodeMetrics,
+  edgeGeometry,
+  wrapLines,
+  isWrapEnabled,
+  isCompactNode,
+  NODE_MAX_LINES,
+  NODE_COMPACT_LINES,
+  NODE_MAX_W,
+  NODE_WRAP_W,
 }
 
 export function createWorkbench({ React, api }) {
@@ -1401,6 +1427,25 @@ export function createWorkbench({ React, api }) {
             }),
             h('button', { type: 'button', className: 'dwb-btn', 'data-primary': '1', disabled: busy, onClick: addNode },
               selected === null ? '添加节点' : '加为子节点'),
+            selected === null || !isWrapEnabled(selected)
+              ? null
+              : h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'dwb-btn',
+                    'data-quiet': '1',
+                    disabled: busy,
+                    title: isCompactNode(selected) ? '展开：完整显示这段长文本' : '收起：只显示 6 行',
+                    onClick: () =>
+                      run(
+                        'debate_tree',
+                        { action: 'update_node', nodeId: selected.id, patch: { details: { compact: isCompactNode(selected) ? 'false' : 'true' } } },
+                        isCompactNode(selected) ? '已展开完整文本' : '已收起为精简显示',
+                      ),
+                  },
+                  isCompactNode(selected) ? '展开全文' : '收起长文',
+                ),
             selectedEdgeId === null
               ? null
               : h('button', {
@@ -1637,6 +1682,13 @@ export function createWorkbench({ React, api }) {
                           }),
                           h('g', { transform: 'translate(14, 11)' }, renderGlyph(h, config.glyph, color, 0, 0)),
                           h('text', { x: 32, y: 20.5, fill: color, fontSize: 10, className: 'dwb-node-type' }, config.label),
+                          metrics.truncated === true
+                            ? h(
+                                'text',
+                                { x: metrics.width - 12, y: metrics.height - 6, fill: 'rgba(242,193,78,0.85)', fontSize: 10, textAnchor: 'end' },
+                                '⋯ 全文见编辑窗',
+                              )
+                            : null,
                           linkedCount > 0
                             ? h(
                                 'text',
@@ -1885,12 +1937,41 @@ export function createWorkbench({ React, api }) {
                     run(
                       'debate_tree',
                       { action: 'update_node', nodeId: selected.id, patch: { details: { wrap: on ? 'true' : 'false' } } },
-                      on ? '已开启多行换行（节点高度自适应）' : '已关闭多行换行',
+                      on ? '已开启多行换行（节点高度自适应，最多 ' + NODE_MAX_LINES + ' 行）' : '已关闭多行换行',
                     )
                   },
                 }),
-                h('span', null, '多行换行（长标题自动加高节点）'),
+                h('span', null, `多行换行（长文本自动加高节点，最多 ${NODE_MAX_LINES} 行 / 宽 ${NODE_MAX_W}px）`),
               ),
+              isWrapEnabled(selected)
+                ? h(
+                    'label',
+                    {
+                      className: 'dwb-field',
+                      style: { flexDirection: 'row', alignItems: 'center', gap: 6, cursor: 'pointer' },
+                    },
+                    h('input', {
+                      type: 'checkbox',
+                      checked: isCompactNode(selected),
+                      onChange: event => {
+                        const on = event.target.checked === true
+                        run(
+                          'debate_tree',
+                          { action: 'update_node', nodeId: selected.id, patch: { details: { compact: on ? 'true' : 'false' } } },
+                          on ? '已切到精简显示（最多 6 行）' : '已切到完整显示（最多 ' + NODE_MAX_LINES + ' 行）',
+                        )
+                      },
+                    }),
+                    h('span', null, `精简显示（只显示 ${NODE_COMPACT_LINES} 行，画布更清爽）`),
+                  )
+                : null,
+              nodeMetrics(selected).truncated
+                ? h(
+                    'div',
+                    { className: 'dwb-muted', style: { marginBottom: 7 } },
+                    '主标题被截断（单行模式上限 ' + NODE_MAX_W + 'px）。要完整展示：勾上「多行换行」，再把「精简显示」取消。',
+                  )
+                : null,
               h(
                 'label',
                 { className: 'dwb-field' },
@@ -2706,7 +2787,30 @@ export function createWorkbench({ React, api }) {
                     { key: card.id, className: 'dwb-item' },
                     h('b', null, card.title),
                     h('span', { className: 'dwb-chip', style: { marginLeft: 6 } }, `${card.type}｜可信度 ${card.credibility}/5`),
-                    card.originalText ? h('div', { className: 'dwb-muted' }, `「${card.originalText}」`) : null,
+                    card.content ? h('div', { style: { marginTop: 3, whiteSpace: 'pre-wrap', wordBreak: 'break-word' } }, card.content) : null,
+                    card.originalText
+                      ? h(
+                          'div',
+                          { className: expandedCards[card.id] === true ? 'dwb-quote' : 'dwb-quote dwb-clamp' },
+                          `「${card.originalText}」`,
+                        )
+                      : null,
+                    card.originalText && String(card.originalText).length > 90
+                      ? h(
+                          'button',
+                          {
+                            type: 'button',
+                            className: 'dwb-btn',
+                            'data-quiet': '1',
+                            style: { marginTop: 2, padding: '1px 6px' },
+                            onClick: () => toggleCardExpanded(card.id),
+                          },
+                          expandedCards[card.id] === true ? '收起原文' : '展开原文',
+                        )
+                      : null,
+                    (card.tags ?? []).length > 0
+                      ? h('div', null, (card.tags ?? []).map(tag => h('span', { key: tag, className: 'dwb-tag' }, tag)))
+                      : null,
                     card.source ? h('div', { className: 'dwb-muted' }, `来源：${card.source}${card.year ? ` ${card.year}` : ''}`) : null,
                     h(
                       'div',

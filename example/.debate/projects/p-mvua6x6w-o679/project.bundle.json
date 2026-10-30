@@ -1,7 +1,7 @@
 {
   "format": "debateweaver-project",
   "version": 1,
-  "exportedAt": "2026-10-30T08:27:00.576Z",
+  "exportedAt": "2026-10-30T09:34:18.086Z",
   "project": {
     "id": "p-mvua6x6w-o679",
     "title": "AI创作提高了人类创作者的意义",
@@ -9,7 +9,7 @@
     "format": "chinese",
     "status": "active",
     "createdAt": "2026-10-30T01:16:06.920Z",
-    "updatedAt": "2026-10-30T08:27:00.576Z",
+    "updatedAt": "2026-10-30T09:34:18.086Z",
     "argumentTreeId": "tree-92fbaef3-faca-4343-a7a2-174b9deb0c1b"
   },
   "argumentTree": {
@@ -20,17 +20,226 @@
         "id": "node-ec7dbc38-7739-420f-bb1a-d8f1665eb06b",
         "type": "stance",
         "position": {
-          "x": -46,
-          "y": 109
+          "x": -230,
+          "y": -261
         },
         "data": {
           "label": "AI创作提高了人类创作者存在的意义"
         }
+      },
+      {
+        "id": "node-ba536010-4d5b-4f3d-9b3f-e8d0dbf73e55",
+        "type": "premise",
+        "position": {
+          "x": -267,
+          "y": -104
+        },
+        "data": {
+          "label": "提高了对人类创作者的需求即提高了其存在的意义"
+        }
+      },
+      {
+        "id": "node-5edd46fb-e778-43db-8bb9-60d2f2617148",
+        "type": "premise",
+        "position": {
+          "x": -190,
+          "y": -174
+        },
+        "data": {
+          "label": "原创观点才是创作"
+        }
+      },
+      {
+        "id": "node-47ddda00-0b77-48ac-87e8-767454429a89",
+        "type": "status",
+        "position": {
+          "x": -252,
+          "y": -14
+        },
+        "data": {
+          "label": "现状下充斥大量流水线式，同质化，粗制滥造的作品"
+        }
+      },
+      {
+        "id": "node-66765251-fd55-4670-a2f6-f54c53ce3bda",
+        "type": "evidence",
+        "position": {
+          "x": 155,
+          "y": -32
+        },
+        "data": {
+          "label": "当前AI短剧的精品率0.13%"
+        }
+      },
+      {
+        "id": "node-5d16b52e-5388-435a-bc57-0e4718885665",
+        "type": "status",
+        "position": {
+          "x": -231,
+          "y": 111
+        },
+        "data": {
+          "label": "当前观众需求恰恰是内容创作导向的作品"
+        }
+      },
+      {
+        "id": "node-3f99ceb5-70f7-4d70-a26d-7991f36be3b1",
+        "type": "status",
+        "position": {
+          "x": -251,
+          "y": 448
+        },
+        "data": {
+          "label": "当前在原创能力领域，人类超越ai，且无法被替代"
+        }
+      },
+      {
+        "id": "node-297139f5-2476-4b52-a6f1-c3cb36e4578b",
+        "type": "claim",
+        "position": {
+          "x": -228,
+          "y": 712
+        },
+        "data": {
+          "label": "因此创作者的需求恰恰更高了"
+        }
+      },
+      {
+        "id": "node-26aeb1c5-5ae9-458d-be13-d3e9b4176ca9",
+        "type": "evidence",
+        "position": {
+          "x": 180,
+          "y": 808
+        },
+        "data": {
+          "label": "美国创意专业岗发布量在2025至2026间上升 8%",
+          "description": "Adobe 于 2026 年 6 月发布的研究汇总了四类证据：两波相隔六个月的美国职位发布数据、一项 1,433 名美国与英国创意从业者的调查、一项覆盖 11 个国家 3,300 名正在进入创意行业者的研究，以及定性访谈。结论是“ redistribution rather than replacement ”（重新分配而非替代）：美国创意专业岗位发布量在 2025 年 9 月至 2026 年 4 月间上升了 8%，同时 AI 技能在职位要求中变得更加显性。"
+        }
+      },
+      {
+        "id": "node-4179083b-2739-44a0-bd37-00d416483a97",
+        "type": "evidence",
+        "position": {
+          "x": 136,
+          "y": 700
+        },
+        "data": {
+          "label": "GPT发布后雇主对创造力技能需求不降反增",
+          "description": "Creative PEC（创意产业政策与证据中心，由纽卡斯尔大学与英国皇家艺术学会主导）分析了 2016—2024 年英国 Adzuna 平台上超过 1.68 亿份职位空缺，比较 ChatGPT 发布前后雇主对“AI 技能”与“创造力”的需求变化。核心发现是：ChatGPT 发布后，雇主对 AI 技能的需求与对创造力技能的需求同时出现的概率显著增强，二者越来越多地被并列要求，而非相互替代。"
+        }
+      },
+      {
+        "id": "node-1492a065-fc7e-42b1-a33c-3138257bdbae",
+        "type": "evidence",
+        "position": {
+          "x": 101,
+          "y": 510
+        },
+        "data": {
+          "label": "2025年发表于Nature的研究对比了 9,198 名人类与多个主流模型的 215,542 次发散性联想任务表现，发现：人类与 AI 的普通任务创意得分相近，但人类的变异性显著更大；更重要的是，位于分布右尾的顶尖人类表现者，其得分持续高于包括GPT在内的最先进模型。",
+          "details": {
+            "wrap": "true"
+          },
+          "description": "2025 年发表于 Nature Human Behaviour 的大规模研究（黄棣芳等）对比了 9,198 名人类与多个主流大语言模型的 215,542 次发散性联想任务（DAT）表现，发现：人类与 AI 的平均创意得分相近，但人类的变异性显著更大；更重要的是，位于分布右尾的顶尖人类表现者，其得分持续高于包括 GPT-4 和 DeepSeek 在内的最先进模型。该研究的官方表述是：“人类在右尾分布上表现出更高的创造力水平”。"
+        }
+      },
+      {
+        "id": "node-30cdf590-92af-4918-87e5-ff1cff30f498",
+        "type": "evidence",
+        "position": {
+          "x": 111,
+          "y": 199
+        },
+        "data": {
+          "label": "一项 2025 年发表于 ScienceDirect 的研究分析了 2,200 篇大学入学论文，引入“多样性增长率”来度量每增加一篇新作品所贡献的新想法数量。核心发现是：每增加一篇人类写作的论文，其贡献的新想法数量多于每增加一篇 GPT-4 生成的论文；而且随着纳入分析的论文数量增加，这一差距进一步扩大，呈现出 AI 在大规模使用下的同质化效应。研究者进一步检验了通过提示词工程或参数调整来提升 GPT 多样性的效果，发现这些干预并不能弥合多样性差距。",
+          "details": {
+            "wrap": "true"
+          }
+        }
+      },
+      {
+        "id": "node-676a05ed-00ad-4cde-8535-d3dab9e4ec7b",
+        "type": "evidence",
+        "position": {
+          "x": 110,
+          "y": 348
+        },
+        "data": {
+          "label": "NeurIPS 2025 接收的 “Artificial Hivemind” 研究，基于 26,000 条开放用户查询和 31,250 条人工标注，系统性地揭示了语言模型在开放式生成中的“模式坍缩”：同一个模型内部反复产生相似回应（模型内重复），不同模型之间也产生惊人相似的输出（模型间同质性）。在短篇故事生成领域，一项对 LLM 与日常人类写作者的自动评估研究同样发现，LLM 在“新颖性、惊喜和多样性”上低于普通人类写作者，尽管其在风格复杂度上表现出色。",
+          "details": {
+            "wrap": "true"
+          }
+        }
+      },
+      {
+        "id": "node-22bdeb65-9868-492f-9f9a-00382dfdc9e5",
+        "type": "compare",
+        "position": {
+          "x": 468,
+          "y": 390
+        },
+        "data": {
+          "label": "AI 可以生成单篇看起来“新颖”的内容，但当大量主体使用 AI 时，产出的集体原创空间会收窄。",
+          "details": {
+            "wrap": "true"
+          }
+        }
       }
     ],
-    "edges": [],
+    "edges": [
+      {
+        "id": "edge-7cd0fa47-dccf-4555-bf64-cf03606684cd",
+        "source": "node-47ddda00-0b77-48ac-87e8-767454429a89",
+        "target": "node-66765251-fd55-4670-a2f6-f54c53ce3bda"
+      },
+      {
+        "id": "edge-201c15c8-489a-49bd-aea2-26e6b2fec53f",
+        "source": "node-3f99ceb5-70f7-4d70-a26d-7991f36be3b1",
+        "target": "node-297139f5-2476-4b52-a6f1-c3cb36e4578b"
+      },
+      {
+        "id": "edge-d19686e4-9243-4305-a561-05d7bad26d2d",
+        "source": "node-297139f5-2476-4b52-a6f1-c3cb36e4578b",
+        "target": "node-4179083b-2739-44a0-bd37-00d416483a97"
+      },
+      {
+        "id": "edge-20fd45b1-445f-437f-8ed5-31655212fb35",
+        "source": "node-297139f5-2476-4b52-a6f1-c3cb36e4578b",
+        "target": "node-26aeb1c5-5ae9-458d-be13-d3e9b4176ca9"
+      },
+      {
+        "id": "edge-294dca12-c3cb-4f4b-b0b2-913a08a5797a",
+        "source": "node-3f99ceb5-70f7-4d70-a26d-7991f36be3b1",
+        "target": "node-1492a065-fc7e-42b1-a33c-3138257bdbae"
+      },
+      {
+        "id": "edge-90656c37-fb3e-4a27-abbd-0b52a02b31eb",
+        "source": "node-3f99ceb5-70f7-4d70-a26d-7991f36be3b1",
+        "target": "node-676a05ed-00ad-4cde-8535-d3dab9e4ec7b"
+      },
+      {
+        "id": "edge-382368db-d4fe-4132-83bf-d83d8cf7dcca",
+        "source": "node-3f99ceb5-70f7-4d70-a26d-7991f36be3b1",
+        "target": "node-30cdf590-92af-4918-87e5-ff1cff30f498"
+      },
+      {
+        "id": "edge-b087a2d9-759c-404c-b3a8-16a52a273c32",
+        "source": "node-30cdf590-92af-4918-87e5-ff1cff30f498",
+        "target": "node-22bdeb65-9868-492f-9f9a-00382dfdc9e5"
+      },
+      {
+        "id": "edge-6a537431-c775-4ce9-b6ac-54b9ee9e1460",
+        "source": "node-676a05ed-00ad-4cde-8535-d3dab9e4ec7b",
+        "target": "node-22bdeb65-9868-492f-9f9a-00382dfdc9e5"
+      },
+      {
+        "id": "edge-a74e463d-618f-4e21-8ceb-5ced0ea45b3c",
+        "source": "node-1492a065-fc7e-42b1-a33c-3138257bdbae",
+        "target": "node-22bdeb65-9868-492f-9f9a-00382dfdc9e5"
+      }
+    ],
     "createdAt": "2026-10-30T01:16:06.920Z",
-    "updatedAt": "2026-10-30T08:27:00.576Z"
+    "updatedAt": "2026-10-30T09:34:18.086Z"
   },
   "attackDefenseBoxes": [],
   "nodeEvidenceLinks": [],
