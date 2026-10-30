@@ -20,7 +20,7 @@
   var SHORTCUT_ID = 'debate-workbench.open'
   var API_BASE = '/debate-api'
   var UI_BASE = '/debate-workbench'
-  var POLL_MS = 2000
+  var POLL_MS = 5000
   var VERSION_MS = 3000
 
   /** 把客户端错误送回宿主（桌面壳没有 DevTools 时唯一的可见通道）。 */
@@ -469,6 +469,7 @@
             // 4) 跟随工具状态打开右栏页面：判定用 openNonce（每次 action=open 自增），
             //    所以标签页被手动关掉后再 open 一次也能重开；只有成功才推进 lastNonce。
             var lastNonce = -1
+            var honored = false
             var lastFailureAt = 0
             var reportFailure = function (stage, message) {
               var nowMs = Date.now()
@@ -476,7 +477,13 @@
               lastFailureAt = nowMs
               report(stage, message)
             }
+            var pollTicks = 0
             var poll = function () {
+              // 页面在后台时不轮询；兑现过 open 请求后降频（每 4 拍查一次），
+              // 避免高频 state 请求让右栏反复抢焦点。
+              if (typeof document !== 'undefined' && document.hidden === true) return
+              pollTicks += 1
+              if (honored === true && pollTicks % 4 !== 0) return
               api
                 .state()
                 .then(function (payload) {
@@ -488,10 +495,14 @@
                     lastNonce = nonce
                     return
                   }
-                  if (nonce === lastNonce) return
+                  if (nonce === lastNonce) {
+                    honored = true
+                    return
+                  }
                   try {
                     ctx.sidebarRight.openTab(TAB_KIND)
                     lastNonce = nonce
+                    honored = true
                     report('tab-opened', 'kind=' + TAB_KIND + ' nonce=' + nonce)
                   } catch (error) {
                     reportFailure('tab-open-failed', (error && error.message) || String(error))

@@ -154,6 +154,7 @@ function fitLabel(label, maxWidth) {
 function ensureStyles(doc) {
   const CSS = `
   .dwb-shell { display:flex; flex-direction:column; height:100%; width:100%; min-height:0;
+    overflow:hidden; contain:layout paint; isolation:isolate;
     background: var(--dsw-alias-bg-base, #14161f); color: var(--dsw-alias-label-primary, #e8ebf5);
     font: 12.5px/1.6 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
   .dwb-top { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:7px 10px; flex:0 0 auto;
@@ -223,7 +224,10 @@ function ensureStyles(doc) {
     backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%);
     border:1px solid var(--dsw-alias-border-l2, rgba(150,165,220,0.3));
     box-shadow: 0 18px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); }
-  .dwb-float[data-narrow="1"] { left:8px; right:8px; width:auto; top:auto; bottom:8px; max-height:56%; }
+  .dwb-float[data-narrow="1"] { left:8px; right:8px; width:auto; top:auto; bottom:8px; max-height:44%; }
+  .dwb-float[data-collapsed="1"] { max-height:none; width:auto; }
+  .dwb-float[data-collapsed="1"] .dwb-float-body { display:none; }
+  .dwb-float-head button { flex:0 0 auto; }
   .dwb-float-head { display:flex; align-items:center; justify-content:space-between; gap:6px;
     padding:7px 10px; border-bottom:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.2));
     font-size:11.5px; font-weight:600; letter-spacing:0.02em;
@@ -390,12 +394,15 @@ export function createWorkbench({ React, api }) {
     const hostReady = typeof api.projects === 'function' && typeof api.projectAction === 'function' && typeof api.library === 'function'
     const hostHint = '宿主端还没有加载多题目接口：请**完全退出 DSH 再重新启动**（界面已更新，但宿主代码需要重启才能换）。'
     const [drag, setDrag] = React.useState(null)
+    const dragRef = React.useRef(null)
+    dragRef.current = drag
     const [search, setSearch] = React.useState('')
     const [preview, setPreview] = React.useState('')
     const [questions, setQuestions] = React.useState([])
     const [draft, setDraft] = React.useState({
       label: '',
       description: '',
+      nodeType: '',
       newNodeType: 'claim',
       newNodeLabel: '',
       evidenceTitle: '',
@@ -418,6 +425,7 @@ export function createWorkbench({ React, api }) {
     const titleRef = React.useRef(null)
     const rootRef = React.useRef(null)
     const [narrow, setNarrow] = React.useState(false)
+    const [editorCollapsed, setEditorCollapsed] = React.useState(false)
 
     // 右栏默认宽度不大：窄的时候把「侧栏」移到画布下方，否则两列会把画布挤到 0 宽。
     React.useEffect(() => {
@@ -772,7 +780,20 @@ export function createWorkbench({ React, api }) {
 
     React.useEffect(() => {
       reload()
-      const handle = setInterval(reload, 2500)
+      // 轮询只为「模型改完数据后界面跟上」。编辑中不刷新：否则每 2.5 秒一次 setBundle
+      // 会把草稿/焦点冲掉，节点切换也会一顿一顿的。
+      const tick = () => {
+        if (typeof document !== 'undefined' && document.hidden === true) return
+        if (dragRef.current !== null) return
+        const root = rootRef.current
+        const active = typeof document === 'undefined' ? null : document.activeElement
+        if (root !== null && active !== null && active !== undefined && root.contains(active)) {
+          const tag = String(active.tagName || '').toLowerCase()
+          if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+        }
+        reload()
+      }
+      const handle = setInterval(tick, 5000)
       return () => clearInterval(handle)
     }, [reload])
 
@@ -916,6 +937,43 @@ export function createWorkbench({ React, api }) {
       fitView()
     }, [bundle?.project?.id, size.w, size.h])
 
+    /** 把某个节点平移进可视区（新加节点后调用，免得「加了但看不见」）。 */
+    const ensureVisible = node => {
+      const x = Number(node.position?.x) || 0
+      const y = Number(node.position?.y) || 0
+      const metrics = nodeMetrics(node)
+      setView(current => {
+        const left = current.x + x * current.k
+        const top = current.y + y * current.k
+        const right = left + metrics.width * current.k
+        const bottom = top + metrics.height * current.k
+        const padding = 28
+        let dx = 0
+        let dy = 0
+        if (left < padding) dx = padding - left
+        else if (right > size.w - padding) dx = size.w - padding - right
+        if (top < padding) dy = padding - top
+        else if (bottom > size.h - padding) dy = size.h - padding - bottom
+        if (dx === 0 && dy === 0) return current
+        return { ...current, x: current.x + dx, y: current.y + dy }
+      })
+    }
+
+    // 滚轮缩放用原生非被动监听：否则 preventDefault 无效，缩放时外层会跟着滚。
+    const zoomRef = React.useRef(null)
+    React.useEffect(() => {
+      const node = canvasRef.current
+      if (node === null) return undefined
+      const onWheel = event => {
+        event.preventDefault()
+        if (zoomRef.current === null) return
+        const rect = node.getBoundingClientRect()
+        zoomRef.current(Math.exp(-event.deltaY * 0.0015), { x: event.clientX - rect.left, y: event.clientY - rect.top })
+      }
+      node.addEventListener('wheel', onWheel, { passive: false })
+      return () => node.removeEventListener('wheel', onWheel)
+    }, [])
+
     const zoomBy = (factor, anchor) => {
       setView(current => {
         const k = Math.min(3, Math.max(0.08, current.k * factor))
@@ -926,18 +984,11 @@ export function createWorkbench({ React, api }) {
       })
     }
 
-    /** 屏幕像素 → 视图坐标的换算比例（preserveAspectRatio=meet）。 */
-    const viewScale = () => {
-      const svg = svgRef.current
-      if (svg === null) return 1
-      const rect = svg.getBoundingClientRect()
-      if (rect.width === 0 || rect.height === 0) return 1
-      return Math.min(rect.width / bounds.width, rect.height / bounds.height) || 1
-    }
-
     // 供手势回调读取最新视图（避免闭包里的旧 view）。
     const viewRef = React.useRef(view)
     viewRef.current = view
+    // 供原生滚轮监听读取最新缩放函数（监听只注册一次，不随重渲染重挂）。
+    zoomRef.current = zoomBy
 
     // 诊断探针：选中节点后确认编辑窗到底有没有出现在可视区域（桌面壳里看不到 DevTools）。
     React.useEffect(() => {
@@ -976,7 +1027,6 @@ export function createWorkbench({ React, api }) {
 
     const selectNode = id => {
       setSelectedId(id)
-      setDraft(current => ({ ...current, label: '', description: '' }))
       if (id === null || id === undefined) {
         setNotice(undefined)
         return
@@ -984,6 +1034,32 @@ export function createWorkbench({ React, api }) {
       const node = nodes.find(item => item.id === id)
       if (node !== undefined) setNotice('已选中：' + (node.data?.label ?? id))
     }
+
+    // 选中变化时把节点内容种进编辑草稿：输入框完全由草稿驱动，
+    // 「类型 + 标题 + 说明」可以一起改，也能清空，不会被节点数据回填覆盖。
+    React.useEffect(() => {
+      if (selectedId === null) {
+        setDraft(current => (current.label === '' && current.description === '' && current.nodeType === '' ? current : { ...current, label: '', description: '', nodeType: '' }))
+        return
+      }
+      const node = nodes.find(item => item.id === selectedId)
+      if (node === undefined) return
+      setDraft(current => ({ ...current, label: node.data?.label ?? '', description: node.data?.description ?? '', nodeType: node.type }))
+      setEditorCollapsed(false)
+    }, [selectedId, selected?.type, selected?.data?.label, selected?.data?.description])
+
+    // Esc 关闭编辑窗（在输入框里按 Esc 不生效，避免打断输入）。
+    React.useEffect(() => {
+      const onKeyDown = event => {
+        if (event.key !== 'Escape' || selectedId === null) return
+        const target = event.target
+        const tag = target !== null && target !== undefined ? String(target.tagName || '').toLowerCase() : ''
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+        setSelectedId(null)
+      }
+      window.addEventListener('keydown', onKeyDown)
+      return () => window.removeEventListener('keydown', onKeyDown)
+    }, [selectedId])
 
     const onNodeClick = node => {
       if (linkSource !== null && linkSource !== node.id) {
@@ -1008,56 +1084,88 @@ export function createWorkbench({ React, api }) {
         const scale = view.k > 0 ? view.k : 1
         const dx = (e.clientX - startX) / scale
         const dy = (e.clientY - startY) / scale
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true
-        setDrag({ id: node.id, x: originX + dx, y: originY + dy })
+        // 5px 阈值：手抖不算拖动，否则「点一下换节点」会顺手把节点挪走。
+        if (moved !== true && Math.abs(dx) < 5 && Math.abs(dy) < 5) return
+        moved = true
+        setDrag({ id: node.id, x: Math.round(originX + dx), y: Math.round(originY + dy) })
       }
-      const up = () => {
+      const finish = () => {
         window.removeEventListener('pointermove', move)
-        window.removeEventListener('pointerup', up)
+        window.removeEventListener('pointerup', finish)
+        window.removeEventListener('pointercancel', finish)
         setDrag(current => {
           if (current !== null && current.id === node.id && moved) {
-            run('debate_tree', {
-              action: 'move_node',
-              nodeId: node.id,
-              position: { x: Math.round(current.x), y: Math.round(current.y) },
-            })
+            api
+              .tool('debate_tree', { action: 'move_node', nodeId: node.id, position: { x: current.x, y: current.y } })
+              .then(() => reload())
+              .catch(problem => setError(String(problem?.message ?? problem)))
           }
           return null
         })
       }
       window.addEventListener('pointermove', move)
-      window.addEventListener('pointerup', up)
+      window.addEventListener('pointerup', finish)
+      window.addEventListener('pointercancel', finish)
     }
 
-    const addNode = () => {
+    const addNode = async () => {
       const label = draft.newNodeLabel.trim()
       if (label === '') {
         setNotice('先填节点标题再添加')
         return
       }
-      // 没有坐标的新节点会落在 (0,0) 与根节点重叠，看起来像「没加上」。
-      // 选中某节点时作为它的子节点放在右下方；否则放在整棵树最右侧。
+      // 坐标一定有：选中节点时放它的右下方，否则放整棵树最右（宿主也会兜底自动落点）。
       const anchor = selected
-      const maxX = nodes.length === 0 ? 0 : Math.max(...nodes.map(item => Number(item.position?.x) || 0))
-      const position = anchor === null
-        ? { x: maxX + 300, y: 40 }
-        : { x: (Number(anchor.position?.x) || 0) + 300, y: (Number(anchor.position?.y) || 0) + 150 }
-      const args = { action: 'add_node', node: { type: draft.newNodeType, label }, position }
-      if (anchor !== null) args.source = anchor.id
-      api
-        .tool('debate_tree', args)
-        .then(payload => {
-          const created = payload.result?.node
-          if (created !== undefined) selectNode(created.id)
-          setNotice(`已添加节点「${label}」${anchor === null ? '' : `（挂在「${anchor.data?.label ?? ''}」下）`}`)
-          setDraft(current => ({ ...current, newNodeLabel: '' }))
-          return reload()
+      const args = { action: 'add_node', node: { type: draft.newNodeType, label } }
+      if (anchor !== null) {
+        args.source = anchor.id
+        args.position = { x: (Number(anchor.position?.x) || 0) + 320, y: (Number(anchor.position?.y) || 0) + 160 }
+      }
+      setBusy(true)
+      try {
+        const payload = await api.tool('debate_tree', args)
+        const created = payload.result?.node
+        setDraft(current => ({ ...current, newNodeLabel: '' }))
+        await reload()
+        if (created !== undefined) {
+          setSelectedId(created.id)
+          ensureVisible(created)
+        }
+        setNotice(`已添加节点「${label}」${anchor === null ? '' : `（挂在「${anchor.data?.label ?? ''}」下）`}`)
+        setError(null)
+      } catch (problem) {
+        const message = String(problem.message ?? problem)
+        setError(message)
+        if (typeof api.report === 'function') api.report('tool-failed', 'debate_tree add_node: ' + message)
+      } finally {
+        setBusy(false)
+      }
+    }
+
+    /** 「加子论点」：建完立刻选中，方便继续改类型/标题（否则用户找不到新节点）。 */
+    const addChildNode = async () => {
+      if (selected === null) return
+      setBusy(true)
+      try {
+        const payload = await api.tool('debate_tree', {
+          action: 'add_node',
+          node: { type: 'claim', label: '新子论点' },
+          source: selected.id,
+          position: { x: (Number(selected.position?.x) || 0) + 320, y: (Number(selected.position?.y) || 0) + 160 },
         })
-        .catch(problem => {
-          const message = String(problem.message ?? problem)
-          setError(message)
-          if (typeof api.report === 'function') api.report('tool-failed', 'debate_tree add_node: ' + message)
-        })
+        const created = payload.result?.node
+        await reload()
+        if (created !== undefined) {
+          setSelectedId(created.id)
+          ensureVisible(created)
+        }
+        setNotice('已加子论点：直接改类型与标题，再点「保存」')
+        setError(null)
+      } catch (problem) {
+        setError(String(problem.message ?? problem))
+      } finally {
+        setBusy(false)
+      }
     }
 
     /* ---------- 论证树 ---------- */
@@ -1070,6 +1178,7 @@ export function createWorkbench({ React, api }) {
       const origin = view
       let moved = false
       const move = e => {
+        // SVG 用像素尺寸绘制（1 unit = 1px），平移直接用指针位移。
         const dx = e.clientX - startX
         const dy = e.clientY - startY
         if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true
@@ -1127,7 +1236,8 @@ export function createWorkbench({ React, api }) {
               value: draft.newNodeLabel,
               onChange: event => setDraft(current => ({ ...current, newNodeLabel: event.target.value })),
               onKeyDown: event => {
-                if (event.key === 'Enter') addNode()
+                if (event.key !== 'Enter' || event.isComposing === true) return
+                addNode()
               },
             }),
             h('button', { type: 'button', className: 'dwb-btn', 'data-primary': '1', disabled: busy, onClick: addNode },
@@ -1162,9 +1272,8 @@ export function createWorkbench({ React, api }) {
                 setNotice('已重新定位论证树')
               },
               onWheel: event => {
-                event.preventDefault()
-                const rect = event.currentTarget.getBoundingClientRect()
-                zoomBy(Math.exp(-event.deltaY * 0.0015), { x: event.clientX - rect.left, y: event.clientY - rect.top })
+                // React 的 wheel 是被动监听，这里只拦冒泡；真正的缩放走 canvasRef 上的原生监听。
+                event.stopPropagation()
               },
               style: {
                 cursor: 'grab',
@@ -1183,6 +1292,8 @@ export function createWorkbench({ React, api }) {
                   {
                     ref: svgRef,
                     viewBox: `0 0 ${size.w} ${size.h}`,
+                    width: size.w,
+                    height: size.h,
                     preserveAspectRatio: 'xMidYMid meet',
                     style: { width: '100%', height: '100%', display: 'block' },
                     onPointerDownCapture: event => {
@@ -1253,6 +1364,14 @@ export function createWorkbench({ React, api }) {
                           'data-hover': hovered ? '1' : '0',
                           'data-selected': active ? '1' : '0',
                           transform: `translate(${position.x}, ${position.y})`,
+                          tabIndex: 0,
+                          role: 'button',
+                          'aria-label': `节点：${node.data?.label ?? ''}`,
+                          onKeyDown: event => {
+                            if (event.key !== 'Enter' && event.key !== ' ') return
+                            event.preventDefault()
+                            selectNode(node.id)
+                          },
                           onPointerDown: event => onNodePointerDown(event, node),
                           onPointerEnter: () => setHoveredId(node.id),
                           onPointerLeave: () => setHoveredId(current => (current === node.id ? null : current)),
@@ -1317,6 +1436,7 @@ export function createWorkbench({ React, api }) {
                   {
                     className: 'dwb-float',
                     'data-narrow': narrow ? '1' : '0',
+                    'data-collapsed': editorCollapsed ? '1' : '0',
                     style: narrow ? undefined : floatOnLeft ? { left: 8, right: 'auto' } : { right: 8, left: 'auto' },
                     onPointerDown: event => event.stopPropagation(),
                     onPointerUp: event => event.stopPropagation(),
@@ -1328,9 +1448,23 @@ export function createWorkbench({ React, api }) {
                     'div',
                     { className: 'dwb-float-head' },
                     h('span', null, '节点编辑'),
-                    h('button', { type: 'button', className: 'dwb-btn', onClick: () => selectNode(null) }, '关闭'),
+                    h(
+                      'div',
+                      { style: { display: 'flex', gap: 4 } },
+                      h(
+                        'button',
+                        {
+                          type: 'button',
+                          className: 'dwb-btn',
+                          title: editorCollapsed ? '展开编辑窗' : '收起编辑窗（收起后能点画布上的其他节点）',
+                          onClick: () => setEditorCollapsed(current => current !== true),
+                        },
+                        editorCollapsed ? '展开' : '收起',
+                      ),
+                      h('button', { type: 'button', className: 'dwb-btn', onClick: () => selectNode(null) }, '关闭'),
+                    ),
                   ),
-                  renderNodeSidebar(),
+                  h('div', { className: 'dwb-float-body' }, renderNodeSidebar()),
                 ),
           ),
         ),
@@ -1384,7 +1518,16 @@ export function createWorkbench({ React, api }) {
         h('button', { type: 'button', className: 'dwb-btn', 'data-quiet': '1', title: '重新加载数据', onClick: () => reload() }, '刷新'),
         h(
           'button',
-          { type: 'button', className: 'dwb-btn', 'data-quiet': '1', title: '按层级重新排列节点', onClick: () => run('debate_tree', { action: 'auto_layout' }, '已自动排版') },
+          {
+            type: 'button',
+            className: 'dwb-btn',
+            'data-quiet': '1',
+            title: '按层级重新排列节点',
+            onClick: async () => {
+              await run('debate_tree', { action: 'auto_layout' }, '已自动排版')
+              fitView()
+            },
+          },
           '自动排版',
         ),
       )
@@ -1392,15 +1535,36 @@ export function createWorkbench({ React, api }) {
     /* ---------- 节点侧栏 ---------- */
     const saveNode = async () => {
       if (selected === null) return
-      const patch = {}
-      if (draft.label !== '') patch.label = draft.label
-      if (draft.description !== '') patch.description = draft.description
-      if (Object.keys(patch).length === 0) {
-        setNotice('没有改动')
+      const label = String(draft.label ?? '').trim()
+      if (label === '') {
+        setNotice('标题不能为空：填好标题再保存')
         return
       }
-      await run('debate_tree', { action: 'update_node', nodeId: selected.id, patch }, '节点已保存')
-      setDraft(current => ({ ...current, label: '', description: '' }))
+      const type = draft.nodeType === '' ? selected.type : draft.nodeType
+      setBusy(true)
+      try {
+        const payload = await api.tool('debate_tree', {
+          action: 'update_node',
+          nodeId: selected.id,
+          patch: { type, label, description: String(draft.description ?? '') },
+        })
+        const updated = payload.result?.node
+        if (updated !== undefined) {
+          setDraft(current => ({
+            ...current,
+            label: updated.data?.label ?? label,
+            description: updated.data?.description ?? '',
+            nodeType: updated.type,
+          }))
+        }
+        await reload()
+        setNotice('节点已保存')
+        setError(null)
+      } catch (problem) {
+        setError(String(problem.message ?? problem))
+      } finally {
+        setBusy(false)
+      }
     }
 
     const renderNodeSidebar = () =>
@@ -1424,10 +1588,11 @@ export function createWorkbench({ React, api }) {
                 h('span', null, '标题'),
                 h('input', {
                   ref: titleRef,
-                  value: draft.label !== '' ? draft.label : (selected.data?.label ?? ''),
+                  value: draft.label,
                   onChange: event => setDraft(current => ({ ...current, label: event.target.value })),
                   onKeyDown: event => {
-                    if (event.key === 'Enter') saveNode()
+                    if (event.key !== 'Enter' || event.isComposing === true) return
+                    saveNode()
                   },
                 }),
               ),
@@ -1436,7 +1601,7 @@ export function createWorkbench({ React, api }) {
                 { className: 'dwb-field' },
                 h('span', null, '推理过程 / 说明'),
                 h('textarea', {
-                  value: draft.description !== '' ? draft.description : (selected.data?.description ?? ''),
+                  value: draft.description,
                   placeholder: '论点是机制、立场是一句话主张、前提是假设内容…',
                   onChange: event => setDraft(current => ({ ...current, description: event.target.value })),
                 }),
@@ -1468,8 +1633,8 @@ export function createWorkbench({ React, api }) {
                 h(
                   'select',
                   {
-                    value: selected.type,
-                    onChange: event => run('debate_tree', { action: 'update_node', nodeId: selected.id, patch: { type: event.target.value } }, '已切换类型'),
+                    value: draft.nodeType === '' ? selected.type : draft.nodeType,
+                    onChange: event => setDraft(current => ({ ...current, nodeType: event.target.value })),
                   },
                   NODE_TYPES.map(item => h('option', { key: item.type, value: item.type }, item.label)),
                 ),
@@ -1484,7 +1649,7 @@ export function createWorkbench({ React, api }) {
                     type: 'button',
                     className: 'dwb-btn',
                     disabled: busy,
-                    onClick: () => run('debate_tree', { action: 'add_node', node: { type: 'claim', label: '新子论点' }, source: selected.id }, '已加子论点'),
+                    onClick: addChildNode,
                   },
                   '加子论点',
                 ),
@@ -1497,7 +1662,10 @@ export function createWorkbench({ React, api }) {
                     'data-danger': '1',
                     disabled: busy,
                     onClick: () => {
-                      if (window.confirm('删除该节点及其整个子树？')) run('debate_tree', { action: 'remove_node', nodeId: selected.id }, '节点已删除')
+                      if (window.confirm('删除该节点及其整个子树？')) {
+                        run('debate_tree', { action: 'remove_node', nodeId: selected.id }, '节点已删除')
+                        setSelectedId(null)
+                      }
                     },
                   },
                   '删除',

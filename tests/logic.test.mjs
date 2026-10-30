@@ -210,6 +210,20 @@ check('添加 6 个节点', (await call('debate_project', { action: 'read' })).b
 
 const moved = await call('debate_tree', { action: 'move_node', nodeId: c1.node.id, position: { x: 300, y: 130 } })
 check('节点可移动', moved.node.position.x === 300)
+check('新节点不会全部堆在 (0,0)', !(c1.node.position.x === 0 && c1.node.position.y === 0) && !(c2.node.position.x === c1.node.position.x && c2.node.position.y === c1.node.position.y), JSON.stringify({ c1: c1.node.position, c2: c2.node.position, ev: evNode.node.position }))
+check('子节点落在父节点右侧', c1.node.position.x > stance.node.position.x, JSON.stringify({ parent: stance.node.position, child: c1.node.position }))
+const placed = await call('debate_tree', { action: 'add_node', node: { type: 'claim', label: '显式坐标节点' }, position: { x: 1200, y: 640 } })
+check('add_node 支持显式 position', placed.node.position.x === 1200 && placed.node.position.y === 640, JSON.stringify(placed.node.position))
+const patched = await call('debate_tree', { action: 'update_node', nodeId: placed.node.id, patch: { position: { x: 1300, y: 700 }, label: '显式坐标节点（改）' } })
+check('update_node 支持 patch.position', patched.node.position.x === 1300 && patched.node.position.y === 700, JSON.stringify(patched.node.position))
+let badMove = ''
+try {
+  await call('debate_tree', { action: 'move_node', nodeId: placed.node.id, position: { x: 'abc', y: 1 } })
+} catch (error) {
+  badMove = String(error)
+}
+check('move_node 拒绝非法坐标', badMove.includes('必须是数字') || badMove.includes('position'), badMove.slice(0, 120))
+await call('debate_tree', { action: 'remove_node', nodeId: placed.node.id })
 const layout = await call('debate_tree', { action: 'auto_layout', options: { columnGap: 280, rowGap: 120 } })
 check('自动布局', layout.nodes === 6 && layout.columns >= 3, JSON.stringify(layout))
 const treeRead = await call('debate_tree', { action: 'read' })

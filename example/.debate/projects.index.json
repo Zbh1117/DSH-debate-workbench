@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "activeProjectId": "project-demo-ai",
+  "activeProjectId": "p-mvua6x6w-o679",
   "projects": [
     {
       "id": "project-demo-ai",
@@ -21,7 +21,17 @@
       "createdAt": "2026-10-22T11:37:44.270Z",
       "updatedAt": "2026-10-22T11:37:44.270Z",
       "archived": false
+    },
+    {
+      "id": "p-mvua6x6w-o679",
+      "dir": "projects/p-mvua6x6w-o679",
+      "topic": "AI创作提高了人类创作者的意义",
+      "side": "pro",
+      "format": "chinese",
+      "createdAt": "2026-10-30T01:16:06.920Z",
+      "updatedAt": "2026-10-30T01:17:57.548Z",
+      "archived": false
     }
   ],
-  "updatedAt": "2026-10-22T11:38:07.249Z"
+  "updatedAt": "2026-10-30T01:17:57.549Z"
 }
