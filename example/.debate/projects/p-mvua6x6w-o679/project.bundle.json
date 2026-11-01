@@ -1,7 +1,7 @@
 {
   "format": "debateweaver-project",
   "version": 1,
-  "exportedAt": "2026-10-30T09:34:18.086Z",
+  "exportedAt": "2026-10-30T09:49:49.600Z",
   "project": {
     "id": "p-mvua6x6w-o679",
     "title": "AI创作提高了人类创作者的意义",
@@ -9,7 +9,7 @@
     "format": "chinese",
     "status": "active",
     "createdAt": "2026-10-30T01:16:06.920Z",
-    "updatedAt": "2026-10-30T09:34:18.086Z",
+    "updatedAt": "2026-10-30T09:49:49.600Z",
     "argumentTreeId": "tree-92fbaef3-faca-4343-a7a2-174b9deb0c1b"
   },
   "argumentTree": {
@@ -53,8 +53,8 @@
         "id": "node-47ddda00-0b77-48ac-87e8-767454429a89",
         "type": "status",
         "position": {
-          "x": -252,
-          "y": -14
+          "x": -266,
+          "y": -28
         },
         "data": {
           "label": "现状下充斥大量流水线式，同质化，粗制滥造的作品"
@@ -64,8 +64,8 @@
         "id": "node-66765251-fd55-4670-a2f6-f54c53ce3bda",
         "type": "evidence",
         "position": {
-          "x": 155,
-          "y": -32
+          "x": 186,
+          "y": -68
         },
         "data": {
           "label": "当前AI短剧的精品率0.13%"
@@ -75,19 +75,19 @@
         "id": "node-5d16b52e-5388-435a-bc57-0e4718885665",
         "type": "status",
         "position": {
-          "x": -231,
-          "y": 111
+          "x": -256,
+          "y": 81
         },
         "data": {
-          "label": "当前观众需求恰恰是内容创作导向的作品"
+          "label": "当前观众需求恰恰是内容创作导向的原创作品"
         }
       },
       {
         "id": "node-3f99ceb5-70f7-4d70-a26d-7991f36be3b1",
         "type": "status",
         "position": {
-          "x": -251,
-          "y": 448
+          "x": -299,
+          "y": 400
         },
         "data": {
           "label": "当前在原创能力领域，人类超越ai，且无法被替代"
@@ -175,11 +175,67 @@
         "id": "node-22bdeb65-9868-492f-9f9a-00382dfdc9e5",
         "type": "compare",
         "position": {
-          "x": 468,
-          "y": 390
+          "x": 656,
+          "y": 401
         },
         "data": {
           "label": "AI 可以生成单篇看起来“新颖”的内容，但当大量主体使用 AI 时，产出的集体原创空间会收窄。",
+          "details": {
+            "wrap": "true"
+          }
+        }
+      },
+      {
+        "id": "node-9b5e5c0f-0d9d-4e8d-a2d7-b5242c86afba",
+        "type": "evidence",
+        "position": {
+          "x": 113,
+          "y": 109
+        },
+        "data": {
+          "label": "理论：深度学习训练本身依赖训练集的已有分布，无法预测分布外结果，因此拟合能力与泛化能力天然冲突",
+          "details": {
+            "wrap": "true"
+          }
+        }
+      },
+      {
+        "id": "node-1d4de5f7-580a-4c2e-b9d0-03e7fe501467",
+        "type": "evidence",
+        "position": {
+          "x": 111,
+          "y": 4
+        },
+        "data": {
+          "label": "Tubi的流媒体洞察调查显示，76%的受访者表示更偏好原创内容而非翻拍或系列续集，这一比例同比上升了12个百分点；在Z世代中进一步升至78%",
+          "details": {
+            "wrap": "true"
+          }
+        }
+      },
+      {
+        "id": "node-298c4581-33b5-4fe9-95eb-5027c9cc500c",
+        "type": "premise",
+        "position": {
+          "x": 600,
+          "y": -251
+        },
+        "data": {
+          "label": "首质就要打，态度确认：对方的态度应该是不用ai，古法创作最有意义",
+          "details": {
+            "wrap": "true"
+          }
+        }
+      },
+      {
+        "id": "node-5f6dd935-18cc-489e-86c5-58ca05020599",
+        "type": "compare",
+        "position": {
+          "x": 600,
+          "y": -94
+        },
+        "data": {
+          "label": "所以要比较现状下谁的主张更能解决普通创作者的问题。你也觉得画工失业是坏事，我的主张是所有人都去ai创作，进入大创作时代。你的主张是？继续古法手搓？",
           "details": {
             "wrap": "true"
           }
@@ -236,10 +292,50 @@
         "id": "edge-a74e463d-618f-4e21-8ceb-5ced0ea45b3c",
         "source": "node-1492a065-fc7e-42b1-a33c-3138257bdbae",
         "target": "node-22bdeb65-9868-492f-9f9a-00382dfdc9e5"
+      },
+      {
+        "id": "edge-de64ddd3-af4d-4d8a-8ce6-6e98b052872c",
+        "source": "node-3f99ceb5-70f7-4d70-a26d-7991f36be3b1",
+        "target": "node-9b5e5c0f-0d9d-4e8d-a2d7-b5242c86afba"
+      },
+      {
+        "id": "edge-e3c9aeb6-4ea0-4414-84a4-3cae7cf4a520",
+        "source": "node-9b5e5c0f-0d9d-4e8d-a2d7-b5242c86afba",
+        "target": "node-22bdeb65-9868-492f-9f9a-00382dfdc9e5"
+      },
+      {
+        "id": "edge-df631d3f-c2a3-44cb-ba7b-e15ac47bb47c",
+        "source": "node-5d16b52e-5388-435a-bc57-0e4718885665",
+        "target": "node-1d4de5f7-580a-4c2e-b9d0-03e7fe501467"
+      },
+      {
+        "id": "edge-b2c17876-6bc9-4489-92c4-be46ced6e298",
+        "source": "node-47ddda00-0b77-48ac-87e8-767454429a89",
+        "target": "node-5d16b52e-5388-435a-bc57-0e4718885665"
+      },
+      {
+        "id": "edge-51096fde-a1f7-47ad-9efc-06c0bccbe670",
+        "source": "node-3f99ceb5-70f7-4d70-a26d-7991f36be3b1",
+        "target": "node-5d16b52e-5388-435a-bc57-0e4718885665"
+      },
+      {
+        "id": "edge-c9ba69b4-4752-42a7-933e-d63313d8d389",
+        "source": "node-47ddda00-0b77-48ac-87e8-767454429a89",
+        "target": "node-ba536010-4d5b-4f3d-9b3f-e8d0dbf73e55"
+      },
+      {
+        "id": "edge-adef2dc1-4fc4-42a5-bc38-7380e867ec54",
+        "source": "node-ba536010-4d5b-4f3d-9b3f-e8d0dbf73e55",
+        "target": "node-5edd46fb-e778-43db-8bb9-60d2f2617148"
+      },
+      {
+        "id": "edge-34dc8acf-75e0-45fb-9827-fe8e13f071a9",
+        "source": "node-5f6dd935-18cc-489e-86c5-58ca05020599",
+        "target": "node-298c4581-33b5-4fe9-95eb-5027c9cc500c"
       }
     ],
     "createdAt": "2026-10-30T01:16:06.920Z",
-    "updatedAt": "2026-10-30T09:34:18.086Z"
+    "updatedAt": "2026-10-30T09:49:49.600Z"
   },
   "attackDefenseBoxes": [],
   "nodeEvidenceLinks": [],

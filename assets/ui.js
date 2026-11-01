@@ -229,71 +229,209 @@ function fitLabel(label, maxWidth) {
  */
 function ensureStyles(doc) {
   const CSS = `
-  .dwb-shell { display:flex; flex-direction:column; height:100%; width:100%; min-height:0;
+  /* ============ 设计令牌 ============ */
+  .dwb-shell {
+    --dwb-brand: var(--dsw-alias-brand-primary, #7c8cff);
+    --dwb-brand-2: #b07cff;
+    --dwb-text: var(--dsw-alias-label-primary, #e8ebf5);
+    --dwb-text-2: var(--dsw-alias-label-secondary, #99a1bd);
+    --dwb-hair: var(--dsw-alias-border-l1, rgba(150,165,220,0.18));
+    --dwb-hair-2: var(--dsw-alias-border-l2, rgba(150,165,220,0.30));
+    --dwb-s1: var(--dsw-alias-bg-layer-1, #1c1f2b);
+    --dwb-s2: var(--dsw-alias-bg-layer-2, #161926);
+    --dwb-r-sm: 7px; --dwb-r-md: 10px; --dwb-r-lg: 14px;
+    --dwb-sh1: 0 1px 2px rgba(0,0,0,0.26);
+    --dwb-sh2: 0 10px 26px rgba(0,0,0,0.34);
+    --dwb-ease: cubic-bezier(.2,.7,.3,1);
+    display:flex; flex-direction:column; height:100%; width:100%; min-height:0;
     overflow:hidden; contain:layout paint; isolation:isolate;
-    background: var(--dsw-alias-bg-base, #14161f); color: var(--dsw-alias-label-primary, #e8ebf5);
-    font: 12.5px/1.6 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
-  .dwb-top { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:7px 10px; flex:0 0 auto;
-    border-bottom:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.18));
-    background: var(--dsw-alias-bg-layer-1, #1c1f2b); }
-  .dwb-title { font-weight:650; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
-  .dwb-pill { font-size:11px; padding:1px 7px; border-radius:999px;
-    border:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.25)); color: var(--dsw-alias-label-secondary, #99a1bd); }
-  .dwb-tabbtn { font:inherit; font-size:12px; padding:4px 9px; border-radius:7px; cursor:pointer;
-    border:1px solid transparent; background:transparent; color:var(--dsw-alias-label-secondary, #99a1bd); }
-  .dwb-tabbtn:hover { background:rgba(124,140,255,0.12); color:var(--dsw-alias-label-primary,#e8ebf5); }
-  .dwb-tabbtn[data-active="1"] { background:rgba(124,140,255,0.2); border-color:rgba(124,140,255,0.4); color:#fff; font-weight:600; }
+    background: var(--dsw-alias-bg-base, #14161f); color: var(--dwb-text);
+    font: 12.5px/1.62 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+
+  /* ============ 顶栏 ============ */
+  .dwb-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; flex:0 0 auto;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--dwb-s2) 92%, #fff 8%), var(--dwb-s1));
+    box-shadow: inset 0 -1px 0 var(--dwb-hair); }
+  .dwb-title { font-weight:650; font-size:12.5px; letter-spacing:.01em;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:230px; }
+  .dwb-pill { font-size:10.5px; letter-spacing:.03em; padding:2px 8px; border-radius:999px;
+    border:1px solid var(--dwb-hair); color: var(--dwb-text-2); background: rgba(255,255,255,0.02); }
   .dwb-spacer { flex:1 1 auto; }
-  .dwb-btn { transition: background 120ms ease-out, border-color 120ms ease-out, transform 120ms ease-out; }
+
+  /* ============ 分段控件 ============ */
+  .dwb-seg { display:inline-flex; align-items:center; gap:2px; padding:3px; border-radius:11px;
+    background: color-mix(in srgb, var(--dwb-s2) 88%, #000 12%);
+    box-shadow: inset 0 0 0 1px var(--dwb-hair), inset 0 1px 2px rgba(0,0,0,0.35); }
+  .dwb-tabbtn { font:inherit; font-size:12px; padding:5px 11px; border-radius:8px; cursor:pointer;
+    border:1px solid transparent; background:transparent; color:var(--dwb-text-2);
+    transition: background 130ms var(--dwb-ease), color 130ms var(--dwb-ease); }
+  .dwb-tabbtn:hover { background: color-mix(in srgb, var(--dwb-brand) 14%, transparent); color: var(--dwb-text); }
+  .dwb-tabbtn[data-active="1"] { background: var(--dsw-alias-bg-base, #14161f); color:#fff; font-weight:600;
+    border-color: var(--dwb-hair-2); box-shadow: 0 1px 3px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05); }
+
+  /* ============ 按钮 ============ */
+  .dwb-btn { font:inherit; font-size:12px; line-height:1.4; padding:5px 11px; border-radius:var(--dwb-r-sm);
+    cursor:pointer; display:inline-flex; align-items:center; gap:5px;
+    border:1px solid var(--dwb-hair-2); color: var(--dwb-text);
+    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)), var(--dwb-s1);
+    box-shadow: var(--dwb-sh1);
+    transition: background 130ms var(--dwb-ease), border-color 130ms var(--dwb-ease), transform 100ms var(--dwb-ease), box-shadow 130ms var(--dwb-ease); }
+  .dwb-btn:hover { border-color: var(--dwb-brand); box-shadow: var(--dwb-sh2); }
   .dwb-btn:active { transform: translateY(0.5px); }
-  .dwb-btn[data-primary="1"] { background: linear-gradient(180deg, rgba(124,140,255,0.95), rgba(104,118,255,0.9));
-    border-color: rgba(124,140,255,0.7); color:#fff; box-shadow: 0 2px 8px rgba(90,110,255,0.35); }
-  .dwb-btn[data-primary="1"]:hover { filter: brightness(1.06); }
-  .dwb-btn { font:inherit; font-size:12px; padding:4px 9px; border-radius:8px; cursor:pointer;
-    border:1px solid var(--dsw-alias-border-l2, rgba(150,165,220,0.3));
-    background: var(--dsw-alias-bg-layer-1, #1c1f2b); color: var(--dsw-alias-label-primary, #e8ebf5); }
-  .dwb-btn:hover { border-color: var(--dsw-alias-brand-primary, #7c8cff); }
-  .dwb-btn[data-primary="1"] { background: linear-gradient(135deg, rgba(90,110,240,0.9), rgba(140,80,240,0.9)); color:#fff; border-color:rgba(124,140,255,0.5); font-weight:600; }
-  .dwb-btn[data-danger="1"] { border-color:rgba(255,107,129,0.45); color:#ff8497; background:rgba(255,107,129,0.1); }
-  .dwb-btn:disabled { opacity:.45; cursor:not-allowed; }
+  .dwb-btn[data-primary="1"] { border-color: color-mix(in srgb, var(--dwb-brand) 55%, transparent); color:#fff; font-weight:600;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--dwb-brand) 92%, #fff 8%), var(--dwb-brand-2));
+    box-shadow: 0 3px 12px color-mix(in srgb, var(--dwb-brand) 38%, transparent), inset 0 1px 0 rgba(255,255,255,0.22); }
+  .dwb-btn[data-primary="1"]:hover { filter: brightness(1.07); box-shadow: 0 5px 18px color-mix(in srgb, var(--dwb-brand) 46%, transparent); }
+  .dwb-btn[data-danger="1"] { border-color: color-mix(in srgb, #ff6b81 45%, transparent); color:#ff8b9d;
+    background: color-mix(in srgb, #ff6b81 12%, transparent); box-shadow:none; }
+  .dwb-btn[data-danger="1"]:hover { background: color-mix(in srgb, #ff6b81 20%, transparent); border-color:#ff6b81; }
+  .dwb-btn[data-quiet="1"] { background:transparent; border-color:transparent; color: var(--dwb-text-2); box-shadow:none; }
+  .dwb-btn[data-quiet="1"]:hover { background: color-mix(in srgb, var(--dwb-brand) 13%, transparent);
+    border-color: var(--dwb-hair); color: var(--dwb-text); }
+  .dwb-btn:disabled, .dwb-btn[disabled] { opacity:.42; cursor:not-allowed; box-shadow:none; filter:none; }
+  .dwb-btn:focus-visible { outline:2px solid color-mix(in srgb, var(--dwb-brand) 65%, transparent); outline-offset:1px; }
+
+  /* ============ 版面骨架 ============ */
   .dwb-body { flex:1 1 auto; min-height:0; display:flex; }
-  .dwb-canvas { flex:1 1 auto; min-width:0; position:relative; overflow:hidden;
-    background: radial-gradient(700px 320px at 12% -8%, rgba(90,110,255,0.1), transparent 60%), var(--dsw-alias-bg-base,#14161f); }
-  .dwb-side { flex:0 0 300px; border-left:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.18));
-    padding:10px; overflow:auto; background: var(--dsw-alias-bg-layer-1, #1c1f2b); }
-  .dwb-pane { flex:1 1 auto; min-width:0; padding:10px; overflow:auto; }
-  .dwb-field { display:flex; flex-direction:column; gap:3px; margin-bottom:7px; }
-  .dwb-field > span { font-size:11px; color:var(--dsw-alias-label-secondary,#99a1bd); }
+  .dwb-pane { flex:1 1 auto; min-width:0; overflow:auto; padding:14px;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.026) 1px, transparent 0),
+      radial-gradient(680px 300px at 6% -14%, color-mix(in srgb, var(--dwb-brand) 9%, transparent), transparent 62%);
+    background-size: 16px 16px, auto; background-position: 0 0, 0 0; }
+  .dwb-side { flex:0 0 300px; min-width:0; padding:13px; overflow:auto;
+    border-left:1px solid var(--dwb-hair);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--dwb-s1) 90%, #000 10%), var(--dwb-s1)); }
+  .dwb-body.dwb-narrow { flex-direction:column; }
+  .dwb-body.dwb-narrow .dwb-side { flex:0 0 auto; max-height:48%; border-left:none; border-top:1px solid var(--dwb-hair); }
+
+  /* ============ 面板标题 / 分区 ============ */
+  .dwb-panelhead { display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    margin:0 0 11px; padding-bottom:8px; border-bottom:1px solid var(--dwb-hair); }
+  .dwb-eyebrow { display:flex; align-items:center; gap:7px; font-size:11.5px; font-weight:650; letter-spacing:.05em; color: var(--dwb-text); }
+  .dwb-eyebrow::before { content:''; width:2px; height:12px; border-radius:2px;
+    background: linear-gradient(180deg, var(--dwb-brand), var(--dwb-brand-2)); }
+  .dwb-panelhint { font-size:10.5px; letter-spacing:.02em; color: var(--dwb-text-2); text-align:right; }
+  .dwb-section { display:flex; align-items:center; gap:6px; margin:0 0 7px;
+    font-size:10.5px; font-weight:650; letter-spacing:.08em; color: var(--dwb-text-2); }
+  .dwb-section::after { content:''; flex:1 1 auto; height:1px; background: var(--dwb-hair); }
+  .dwb-kbd { font-size:10px; padding:0 5px; border-radius:4px; border:1px solid var(--dwb-hair);
+    background: rgba(255,255,255,0.04); color: var(--dwb-text-2); }
+
+  /* ============ 空状态 ============ */
+  .dwb-empty { display:flex; flex-direction:column; align-items:center; gap:7px; text-align:center;
+    padding:28px 18px; border-radius:var(--dwb-r-lg);
+    border:1px dashed color-mix(in srgb, var(--dwb-text-2) 42%, transparent);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--dwb-brand) 6%, transparent), transparent); }
+  .dwb-empty-icon { font-size:20px; line-height:1; opacity:.85; }
+  .dwb-empty-title { font-size:12.5px; font-weight:600; color: var(--dwb-text); }
+  .dwb-empty-text { font-size:11.5px; line-height:1.65; color: var(--dwb-text-2); max-width:36em; }
+
+  /* ============ 表单 ============ */
+  .dwb-field { display:flex; flex-direction:column; gap:4px; margin-bottom:9px; min-width:0; }
+  .dwb-field > span { font-size:10.5px; font-weight:600; letter-spacing:.05em; color:var(--dwb-text-2); }
+  .dwb-field input, .dwb-field textarea, .dwb-field select, .dwb-input, .dwb-input {
+    font:inherit; font-size:12px; padding:6px 9px; border-radius:var(--dwb-r-sm);
+    border:1px solid var(--dwb-hair); background: color-mix(in srgb, var(--dwb-s2) 92%, #000 8%);
+    color: inherit; transition: border-color 130ms var(--dwb-ease), box-shadow 130ms var(--dwb-ease), background 130ms var(--dwb-ease); }
+  .dwb-field input:hover, .dwb-field textarea:hover, .dwb-field select:hover, .dwb-input:hover { border-color: var(--dwb-hair-2); }
   .dwb-field input:focus, .dwb-field textarea:focus, .dwb-field select:focus,
-  .dwb-input:focus, .dwb-input:focus-visible { outline:none; border-color: var(--dsw-alias-brand-primary, #7c8cff);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary, #7c8cff) 30%, transparent); }
-  .dwb-field input, .dwb-field textarea, .dwb-field select, .dwb-input {
-    font:inherit; font-size:12px; padding:4px 7px; border-radius:6px;
-    border:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.25));
-    background: var(--dsw-alias-bg-layer-2, #161926); color:inherit; }
-  .dwb-field textarea { min-height:58px; resize:vertical; }
-  .dwb-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-  .dwb-list { display:flex; flex-direction:column; gap:6px; }
-  .dwb-item { border:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.2)); border-radius:8px; padding:7px 9px; }
-  .dwb-item b { font-weight:600; }
-  .dwb-muted { color:var(--dsw-alias-label-secondary,#99a1bd); font-size:11.5px; }
-  .dwb-chip { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:1px 7px;
-    border-radius:999px; background:rgba(124,140,255,0.14); color:var(--dsw-alias-label-secondary,#b9c1dd); }
-  .dwb-gap { padding:5px 8px; border-radius:7px; font-size:11.5px; border:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.2)); margin-bottom:4px; }
-  .dwb-gap[data-level="error"] { border-color:rgba(255,107,129,0.4); background:rgba(255,107,129,0.08); }
-  .dwb-gap[data-level="warn"] { border-color:rgba(242,193,78,0.35); background:rgba(242,193,78,0.07); }
-  .dwb-bar { height:6px; border-radius:999px; background:rgba(124,140,255,0.16); overflow:hidden; }
-  .dwb-bar > i { display:block; height:100%; background:linear-gradient(90deg,#7c8cff,#b07cff); }
-  .dwb-dim { display:grid; grid-template-columns:60px 1fr 30px; gap:8px; align-items:center; font-size:11.5px; color:var(--dsw-alias-label-secondary,#99a1bd); margin-bottom:5px; }
-.dwb-toolbar { flex:0 0 auto; display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:7px 10px;
+  .dwb-input:focus, .dwb-input:focus-visible { outline:none; border-color: var(--dwb-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--dwb-brand) 26%, transparent); }
+  .dwb-field textarea { min-height:64px; resize:vertical; line-height:1.6; }
+  .dwb-field input[type="range"] { padding:0; border:none; background:transparent; accent-color: var(--dwb-brand); }
+  .dwb-field input[type="checkbox"] { width:14px; height:14px; accent-color: var(--dwb-brand); }
+  .dwb-row { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+
+  /* ============ 卡片 / 列表 ============ */
+  .dwb-list { display:flex; flex-direction:column; gap:8px; }
+  .dwb-item { border:1px solid var(--dwb-hair); border-radius:var(--dwb-r-md); padding:10px 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.030), rgba(255,255,255,0.006)), color-mix(in srgb, var(--dwb-s1) 86%, transparent);
+    box-shadow: var(--dwb-sh1);
+    transition: border-color 140ms var(--dwb-ease), box-shadow 140ms var(--dwb-ease), transform 140ms var(--dwb-ease); }
+  .dwb-item:hover { border-color: color-mix(in srgb, var(--dwb-brand) 34%, transparent); box-shadow: var(--dwb-sh2); }
+  .dwb-item b { font-weight:640; letter-spacing:.01em; }
+  .dwb-item[data-tone="danger"] { border-left:2px solid color-mix(in srgb, #ff6b81 70%, transparent); }
+  .dwb-item[data-tone="warn"] { border-left:2px solid color-mix(in srgb, #f2c14e 70%, transparent); }
+  .dwb-muted { color:var(--dwb-text-2); font-size:11.5px; line-height:1.62; }
+
+  /* ============ 标签 / 引用 ============ */
+  .dwb-chip { display:inline-flex; align-items:center; gap:4px; font-size:10.5px; letter-spacing:.02em;
+    padding:2px 8px; border-radius:999px; background: color-mix(in srgb, var(--dwb-brand) 15%, transparent);
+    color: color-mix(in srgb, var(--dwb-brand) 45%, var(--dwb-text)); }
+  .dwb-tag { display:inline-block; font-size:10px; padding:1px 6px; margin:3px 4px 0 0; border-radius:5px;
+    background: rgba(255,255,255,0.05); border:1px solid var(--dwb-hair); color: var(--dwb-text-2); }
+  .dwb-quote { font-size:11.5px; line-height:1.7; color: var(--dwb-text-2); margin:5px 0;
+    border-left:2px solid color-mix(in srgb, var(--dwb-brand) 45%, transparent); padding-left:9px;
+    white-space:pre-wrap; word-break:break-word; }
+  .dwb-clamp { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+
+  /* ============ 缺口 / 提示条 ============ */
+  .dwb-gap { padding:8px 11px; border-radius:var(--dwb-r-sm); font-size:11.5px; line-height:1.6;
+    border:1px solid var(--dwb-hair); border-left:2px solid color-mix(in srgb, var(--dwb-brand) 60%, transparent);
+    background: rgba(255,255,255,0.022); margin-bottom:6px; }
+  .dwb-gap[data-level="error"] { border-left-color:#ff6b81; border-color: color-mix(in srgb, #ff6b81 30%, transparent);
+    background: color-mix(in srgb, #ff6b81 9%, transparent); }
+  .dwb-gap[data-level="warn"] { border-left-color:#f2c14e; border-color: color-mix(in srgb, #f2c14e 28%, transparent);
+    background: color-mix(in srgb, #f2c14e 8%, transparent); }
+  .dwb-banner { padding:9px 12px; font-size:11.5px; line-height:1.6; border-radius:var(--dwb-r-md);
+    background: color-mix(in srgb, var(--dwb-brand) 15%, transparent);
+    border:1px solid color-mix(in srgb, var(--dwb-brand) 30%, transparent); color:#cfd4ff; }
+
+  /* ============ 五维指标 ============ */
+  .dwb-dim { display:grid; grid-template-columns:62px 1fr 30px; gap:9px; align-items:center;
+    font-size:11.5px; color:var(--dwb-text-2); margin-bottom:7px; }
+  .dwb-dim > span:last-child { text-align:right; color: var(--dwb-text); font-weight:620;
+    font-variant-numeric: tabular-nums; }
+  .dwb-bar { height:7px; border-radius:999px; overflow:hidden;
+    background: color-mix(in srgb, var(--dwb-text-2) 18%, transparent);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.35); }
+  .dwb-bar > i { display:block; height:100%; border-radius:999px;
+    background: linear-gradient(90deg, var(--dwb-brand), var(--dwb-brand-2));
+    box-shadow: 0 0 10px color-mix(in srgb, var(--dwb-brand) 45%, transparent);
+    transition: width 420ms var(--dwb-ease); }
+  .dwb-stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(104px, 1fr)); gap:9px; margin-bottom:12px; }
+  .dwb-stat { border:1px solid var(--dwb-hair); border-radius:var(--dwb-r-md); padding:10px 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.032), rgba(255,255,255,0.006)), color-mix(in srgb, var(--dwb-s1) 84%, transparent);
+    box-shadow: var(--dwb-sh1); }
+  .dwb-stat-v { font-size:21px; font-weight:680; letter-spacing:-0.012em; line-height:1.15;
+    font-variant-numeric: tabular-nums; color: var(--dwb-text); }
+  .dwb-stat-k { font-size:10.5px; letter-spacing:.06em; color: var(--dwb-text-2); margin-top:2px; }
+  .dwb-stat[data-tone="brand"] .dwb-stat-v { background: linear-gradient(135deg, var(--dwb-brand), var(--dwb-brand-2));
+    -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+  /* ============ 代码 / 正文块 ============ */
+  .dwb-pre { white-space:pre-wrap; word-break:break-word; font-size:11.5px; line-height:1.7; margin:0;
+    background: color-mix(in srgb, var(--dwb-s2) 92%, #000 8%);
+    border:1px solid var(--dwb-hair); border-radius:var(--dwb-r-md);
+    padding:11px 13px; overflow:auto; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* ============ 底栏 ============ */
+  .dwb-foot { flex:0 0 auto; padding:5px 12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+    color:var(--dwb-text-2); font-size:10.5px; letter-spacing:.02em;
+    border-top:1px solid var(--dwb-hair);
+    background: linear-gradient(0deg, color-mix(in srgb, var(--dwb-s2) 70%, transparent), transparent); }
+  .dwb-error { color:#ff8b9d; }
+
+  /* ============ 滚动条 ============ */
+  .dwb-pane, .dwb-side, .dwb-pre, .dwb-list, .dwb-float-body { scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--dwb-text-2) 32%, transparent) transparent; }
+  .dwb-pane::-webkit-scrollbar, .dwb-side::-webkit-scrollbar, .dwb-pre::-webkit-scrollbar { width:10px; height:10px; }
+  .dwb-pane::-webkit-scrollbar-thumb, .dwb-side::-webkit-scrollbar-thumb, .dwb-pre::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--dwb-text-2) 30%, transparent); border-radius:999px;
+    border:3px solid transparent; background-clip: content-box; }
+  .dwb-pane::-webkit-scrollbar-thumb:hover, .dwb-side::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--dwb-brand) 55%, transparent); background-clip: content-box; }
+  .dwb-pane::-webkit-scrollbar-track, .dwb-side::-webkit-scrollbar-track { background: transparent; }
+
+  /* ============ 论证树（保持原样） ============ */
+  .dwb-canvas { flex:1 1 auto; min-width:0; position:relative; overflow:hidden; display:flex; flex-direction:column;
+    background: radial-gradient(700px 320px at 12% -8%, rgba(90,110,255,0.1), transparent 60%), var(--dsw-alias-bg-base,#14161f); }
+  .dwb-canvas-area { flex:1 1 auto; min-height:0; position:relative; }
+  .dwb-toolbar { flex:0 0 auto; display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:7px 10px;
     border-bottom:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.15));
     background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, #1c1f2b) 90%, transparent);
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-    .dwb-canvas { display:flex; flex-direction:column; }
-  .dwb-canvas-area { flex:1 1 auto; min-height:0; position:relative; }
-  .dwb-body.dwb-narrow { flex-direction:column; }
-  .dwb-body.dwb-narrow .dwb-side { flex:0 0 auto; max-height:48%; border-left:none;
-    border-top:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.2)); }
   .dwb-float { position:absolute; top:8px; right:8px; width:332px; max-height:calc(100% - 16px);
     display:flex; flex-direction:column; z-index:5; overflow:hidden; border-radius:14px;
     background: color-mix(in srgb, var(--dsw-alias-bg-overlay, #1c1f2b) 82%, transparent);
@@ -306,18 +444,17 @@ function ensureStyles(doc) {
   .dwb-float-head button { flex:0 0 auto; }
   .dwb-float-head { display:flex; align-items:center; justify-content:space-between; gap:6px;
     padding:7px 10px; border-bottom:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.2));
-    font-size:11.5px; font-weight:600; letter-spacing:0.02em;
-    color: var(--dsw-alias-label-primary,#e8ebf5);
+    font-size:11.5px; font-weight:600; letter-spacing:0.02em; color: var(--dsw-alias-label-primary,#e8ebf5);
     background: linear-gradient(to bottom, rgba(255,255,255,0.05), transparent); }
   .dwb-float .dwb-side { flex:1 1 auto; min-height:0; overflow:auto; max-height:none;
     border:none; background:transparent; padding:8px; }
-.dwb-zoom { position:absolute; left:10px; bottom:10px; display:flex; gap:3px; align-items:center; z-index:4;
+  .dwb-zoom { position:absolute; left:10px; bottom:10px; display:flex; gap:3px; align-items:center; z-index:4;
     padding:4px; border-radius:11px;
     background: color-mix(in srgb, var(--dsw-alias-bg-overlay, #1c1f2b) 78%, transparent);
     backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%);
     border:1px solid var(--dsw-alias-border-l2, rgba(150,165,220,0.28));
     box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
-    .dwb-zoom .dwb-muted { padding:0 4px; }
+  .dwb-zoom .dwb-muted { padding:0 4px; }
   .dwb-node { cursor: pointer; }
   .dwb-node-inner { transition: transform 140ms var(--ds-ease-out, ease-out), filter 140ms ease-out; }
   .dwb-node:hover .dwb-node-inner { transform: translateY(-1px); filter: drop-shadow(0 6px 12px rgba(0,0,0,0.45)); }
@@ -327,16 +464,6 @@ function ensureStyles(doc) {
   .dwb-node-type { letter-spacing: 0.04em; font-weight: 600; }
   .dwb-node-badge { font-size: 10px; }
   .dwb-node rect { cursor:pointer; }
-  .dwb-seg { display:inline-flex; align-items:center; gap:2px; padding:2px; border-radius:10px;
-    background: var(--dsw-alias-bg-layer-2, #161926);
-    border:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.2)); }
-  .dwb-seg .dwb-tabbtn { padding:4px 10px; border-radius:8px; }
-  .dwb-seg .dwb-tabbtn[data-active="1"] { background: var(--dsw-alias-bg-base, #14161f);
-    border-color: var(--dsw-alias-border-l2, rgba(150,165,220,0.3));
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4); color: var(--dsw-alias-label-primary, #e8ebf5); }
-  .dwb-btn[data-quiet="1"] { background:transparent; border-color:transparent; color: var(--dsw-alias-label-secondary,#99a1bd); }
-  .dwb-btn[data-quiet="1"]:hover { background: rgba(124,140,255,0.12); border-color: var(--dsw-alias-border-l1, rgba(150,165,220,0.2)); color: var(--dsw-alias-label-primary,#e8ebf5); }
-  .dwb-float-glass { backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); }
   .dwb-node text { pointer-events:none; font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
   .dwb-edge-hit { cursor:pointer; }
   .dwb-edge:hover .dwb-edge-line { stroke: rgba(124,140,255,0.85); stroke-width: 2.1; }
@@ -348,13 +475,12 @@ function ensureStyles(doc) {
   .dwb-port { fill: rgba(20,22,31,0.96); stroke: var(--dsw-alias-brand-primary, #7c8cff); stroke-width: 1.6; cursor: crosshair; }
   .dwb-port:hover { fill: var(--dsw-alias-brand-primary, #7c8cff); }
   .dwb-rubber { pointer-events:none; }
-  .dwb-foot { flex:0 0 auto; padding:4px 10px; border-top:1px solid var(--dsw-alias-border-l1, rgba(150,165,220,0.15));
-    color:var(--dsw-alias-label-secondary,#99a1bd); font-size:11px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .dwb-error { color:#ff8497; }
-  .dwb-banner { padding:4px 10px; font-size:11.5px; background:rgba(124,140,255,0.16); color:#b9c1ff; }
-  .dwb-pre { white-space:pre-wrap; word-break:break-word; font-size:11.5px; line-height:1.7; margin:0;
-    background:var(--dsw-alias-bg-layer-2,#161926); border:1px solid var(--dsw-alias-border-l1,rgba(150,165,220,0.2));
-    border-radius:8px; padding:10px; overflow:auto; }
+  .dwb-float-glass { backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); }
+
+  /* ============ 无障碍 / 降低动效 ============ */
+  @media (prefers-reduced-motion: reduce) {
+    .dwb-shell * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+  }
   `
   let style = doc.getElementById('dwb-style')
   if (style === null) {
@@ -553,6 +679,25 @@ export function createWorkbench({ React, api }) {
     }, [])
 
     const bodyClass = () => (narrow ? 'dwb-body dwb-narrow' : 'dwb-body')
+
+    /** 面板标题：品牌竖条 + 标题 + 右侧说明，统一各标签页排版。 */
+    const panelHead = (title, hint) =>
+      h(
+        'div',
+        { className: 'dwb-panelhead' },
+        h('div', { className: 'dwb-eyebrow' }, title),
+        hint === undefined || hint === null || hint === '' ? null : h('div', { className: 'dwb-panelhint' }, hint),
+      )
+
+    /** 空状态：虚线卡片 + 图标 + 标题 + 说明。 */
+    const emptyState = (icon, title, text) =>
+      h(
+        'div',
+        { className: 'dwb-empty' },
+        h('div', { className: 'dwb-empty-icon' }, icon),
+        h('div', { className: 'dwb-empty-title' }, title),
+        text === undefined || text === '' ? null : h('div', { className: 'dwb-empty-text' }, text),
+      )
 
     /* ---------- 数据同步 ---------- */
     const reload = React.useCallback(async () => {
@@ -2071,12 +2216,19 @@ export function createWorkbench({ React, api }) {
           ? null
           : h(
               'div',
-              { className: 'dwb-item', style: { marginBottom: 6 } },
-              h('b', null, title),
+              { className: 'dwb-item', style: { marginBottom: 8 } },
+              h('div', { className: 'dwb-section' }, title),
               h(
                 'div',
-                { className: 'dwb-list', style: { marginTop: 4 } },
-                rows.map((row, index) => h('div', { key: index, className: 'dwb-muted' }, row)),
+                { style: { display: 'flex', flexDirection: 'column', gap: 5 } },
+                rows.map((row, index) =>
+                  h(
+                    'div',
+                    { key: index, className: 'dwb-muted', style: { display: 'flex', gap: 7 } },
+                    h('span', { style: { color: 'var(--dwb-brand)', flex: '0 0 auto', lineHeight: '1.55' } }, '·'),
+                    h('span', { style: { minWidth: 0 } }, row),
+                  ),
+                ),
               ),
             )
       const stringify = value => (typeof value === 'string' ? value : '')
@@ -2148,17 +2300,13 @@ export function createWorkbench({ React, api }) {
         h(
           'div',
           { className: 'dwb-pane' },
-          h('div', { style: { fontWeight: 650, marginBottom: 6 } }, '拆题结果'),
+          panelHead('拆题结果', decomposition === undefined ? '未开始' : '概念 · 争议点 · 战场 · 比较'),
           decomposition === undefined
-            ? h(
-                'div',
-                { className: 'dwb-muted', style: { marginBottom: 8 } },
-                '还没有拆题结果。手动填可以用 debate_topic(action=save)；也可以点右侧「生成拆题候选」，确认后一键写入。',
-              )
+              ? emptyState('🧩', '还没有拆题结果', '手动填写可用 debate_topic(action=save)；也可以点右侧「生成拆题候选」，确认后一键写入。')
             : h(
                 'div',
                 null,
-                decomposition.judgeQuestion ? h('div', { className: 'dwb-item', style: { marginBottom: 6 } }, h('b', null, '评委问题'), h('div', { className: 'dwb-muted' }, decomposition.judgeQuestion)) : null,
+                decomposition.judgeQuestion ? h('div', { className: 'dwb-item', style: { marginBottom: 8 } }, h('div', { className: 'dwb-section' }, '评委问题'), h('div', { className: 'dwb-muted' }, decomposition.judgeQuestion)) : null,
                 decomposition.motionType ? h('div', { className: 'dwb-muted', style: { marginBottom: 6 } }, `辩题类型：${decomposition.motionType}`) : null,
                 section('核心概念', conceptRows),
                 section('争议点', pointRows),
@@ -2173,8 +2321,8 @@ export function createWorkbench({ React, api }) {
         h(
           'div',
           { className: 'dwb-side', style: { flexBasis: 320 } },
-          h('div', { style: { fontWeight: 650, marginBottom: 4 } }, 'AI 拆题助手'),
-          h('div', { className: 'dwb-muted', style: { marginBottom: 8 } }, `模型路由：${routeText}`),
+          panelHead('AI 拆题助手', '候选需确认'),
+          h('div', { className: 'dwb-row', style: { marginBottom: 9 } }, h('span', { className: 'dwb-chip' }, `模型：${routeText}`)),
           h('label', { className: 'dwb-field' }, h('span', null, '补充要求（可选）'),
             h('input', {
               value: aiHint,
@@ -2203,8 +2351,8 @@ export function createWorkbench({ React, api }) {
             : h(
                 'div',
                 null,
-                h('div', { className: 'dwb-row', style: { marginBottom: 6 } },
-                  h('b', null, '候选预览'),
+                h('div', { className: 'dwb-row', style: { marginBottom: 7, justifyContent: 'space-between' } },
+                  h('div', { className: 'dwb-section', style: { flex: '1 1 auto' } }, '候选预览'),
                   h('span', { className: 'dwb-chip' }, '未落库'),
                 ),
                 h('pre', { className: 'dwb-pre', style: { maxHeight: 260 } }, JSON.stringify(aiCandidate, null, 2)),
@@ -2249,12 +2397,14 @@ export function createWorkbench({ React, api }) {
       const listPane = h(
         'div',
         { className: 'dwb-pane', style: { flex: '0 0 min(280px, 100%)', minWidth: 220 } },
-        h('div', { style: { fontWeight: 650, marginBottom: 4 } }, '复盘记录'),
+        panelHead('复盘记录', '按时间倒序'),
         h('div', { className: 'dwb-muted', style: { marginBottom: 8 } }, '录音 + 转写 → 三票制判比赛 + 按环节复盘'),
         h(
           'div',
           { className: 'dwb-list' },
-          reviews.length === 0 ? h('div', { className: 'dwb-muted' }, '还没有复盘。下面新建一条。') : null,
+          reviews.length === 0
+            ? emptyState('🎙', '还没有复盘', '下面新建一条：填对手与日期，粘贴转写或选本地录音，再跑「判比赛 / 环节复盘 / 证据候选」。')
+            : null,
           reviews.map(item =>
             h(
               'div',
@@ -2278,7 +2428,7 @@ export function createWorkbench({ React, api }) {
         h(
           'div',
           { className: 'dwb-item', style: { marginTop: 10 } },
-          h('div', { style: { fontWeight: 650, marginBottom: 6 } }, '新建复盘'),
+          panelHead('新建复盘', '录音 / 转写 + 三票制'),
           h('input', {
             className: 'dwb-input',
             style: { width: '100%', marginBottom: 6 },
@@ -2371,7 +2521,7 @@ export function createWorkbench({ React, api }) {
                 ? h(
                     'div',
                     { style: { marginTop: 6 } },
-                    h('div', { style: { fontWeight: 600 } }, '论证留存度'),
+                    h('div', { className: 'dwb-section' }, '论证留存度'),
                     judge.argumentSurvival.map((item, index) =>
                       h('div', { key: 'survival-' + index, className: 'dwb-muted' }, '[' + reviewSideText(item.side) + '] ' + item.argument + '：' + (item.survived === true ? '存活' : '被打掉') + (item.afterClash ? '（' + item.afterClash + '）' : '')),
                     ),
@@ -2381,7 +2531,7 @@ export function createWorkbench({ React, api }) {
                 ? h(
                     'div',
                     { style: { marginTop: 6 } },
-                    h('div', { style: { fontWeight: 600 } }, '关键交锋'),
+                    h('div', { className: 'dwb-section', style: { marginTop: 10 } }, '关键交锋'),
                     judge.decisiveClashes.map((item, index) =>
                       h('div', { key: 'clash-' + index, className: 'dwb-muted' }, item.clash + ' → 判 ' + reviewSideText(item.judgedFor) + '（' + item.why + '）'),
                     ),
@@ -2396,7 +2546,7 @@ export function createWorkbench({ React, api }) {
           : h(
               'div',
               { className: 'dwb-item', style: { marginTop: 10 } },
-              h('div', { style: { fontWeight: 650, marginBottom: 6 } }, '环节复盘'),
+              panelHead('环节复盘', '立论 · 质询 · 自由辩 · 结辩'),
               phaseReview.map(phase =>
                 h(
                   'div',
@@ -2418,7 +2568,7 @@ export function createWorkbench({ React, api }) {
           : h(
               'div',
               { className: 'dwb-item', style: { marginTop: 10 } },
-              h('div', { style: { fontWeight: 650, marginBottom: 6 } }, '证据候选（pending，未入库）'),
+              panelHead('证据候选', 'pending，未入库'),
               candidates.map(candidate =>
                 h('div', { key: candidate.id, className: 'dwb-muted', style: { fontSize: 11 } }, '[' + candidate.type + '][' + candidate.status + '] ' + candidate.claim + (candidate.need ? '（' + candidate.need + '）' : '')),
               ),
@@ -2443,7 +2593,7 @@ export function createWorkbench({ React, api }) {
                 actionButton('删除', deleteReview),
               ),
               h('div', { className: 'dwb-muted', style: { marginBottom: 8 } }, detail.source?.audio ? '录音：' + detail.source.audio.file + '（' + Math.round((detail.source.audio.bytes ?? 0) / 1024) + ' KB）' : '无录音（可导入字幕/文本）'),
-              h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '转写'),
+              panelHead('转写', '可粘贴字幕'),
               h('textarea', {
                 className: 'dwb-input',
                 style: { width: '100%', minHeight: 110, marginBottom: 6, fontSize: 12 },
@@ -2521,8 +2671,9 @@ export function createWorkbench({ React, api }) {
         h(
           'div',
           { className: 'dwb-pane' },
-          h('div', { style: { fontWeight: 650, marginBottom: 6 } }, '题目管理'),
-          h('div', { className: 'dwb-muted', style: { marginBottom: 8 } }, '同一工作区可并行准备多个题目；每个题目有独立目录（bundle / 待办 / 稿件），切换后所有面板跟随。'),
+          panelHead('题目管理', '多题目并行'),
+          h('div', { className: 'dwb-section' }, '新建题目'),
+          h('div', { className: 'dwb-muted', style: { marginBottom: 9 } }, '同一工作区可并行准备多个题目；每个题目有独立目录（bundle / 待办 / 稿件），切换后所有面板跟随。'),
           h(
             'div',
             { className: 'dwb-item', style: { marginBottom: 10 } },
@@ -2697,7 +2848,7 @@ export function createWorkbench({ React, api }) {
         h(
           'div',
           { className: 'dwb-side', style: { flexBasis: 300 } },
-          h('div', { style: { fontWeight: 650, marginBottom: 6 } }, '跨题总览'),
+          panelHead('跨题总览', '就绪度 · 待办'),
           h('div', { className: 'dwb-muted', style: { marginBottom: 8 } }, '按就绪度与未完成待办排；点题目切换。'),
           h(
             'div',
@@ -2780,7 +2931,9 @@ export function createWorkbench({ React, api }) {
                 'div',
                 { className: 'dwb-list' },
                 hostReady ? null : h('div', { className: 'dwb-banner', style: { borderRadius: 8, padding: '8px 10px', marginBottom: 6 } }, hostHint),
-                filteredShared.length === 0 && hostReady ? h('div', { className: 'dwb-muted' }, '公共库还是空的：用 debate_library(action=add) 入库，或在本页把本题证据「存入公共库」。') : null,
+                filteredShared.length === 0 && hostReady
+                  ? emptyState('📚', '公共库还是空的', '用 debate_library(action=add) 入库，或在本页把本题证据「存入公共库」，跨题目复用。')
+                  : null,
                 filteredShared.map(card =>
                   h(
                     'div',
@@ -2842,7 +2995,9 @@ export function createWorkbench({ React, api }) {
             ? h(
             'div',
             { className: 'dwb-list' },
-            filtered.length === 0 ? h('div', { className: 'dwb-muted' }, '没有证据卡。') : null,
+            filtered.length === 0
+              ? emptyState('📎', '没有证据卡', '在右侧填写标题与可引用原文，点「新建」即可入库；也可以从公共库引用，或在论证树里给节点挂证据。')
+              : null,
             filtered.map(card =>
               h('div', { key: card.id, className: 'dwb-item' },
                 h('b', null, card.title),
@@ -2892,7 +3047,7 @@ export function createWorkbench({ React, api }) {
           : h(
           'div',
           { className: 'dwb-side', style: { flexBasis: 270 } },
-          h('div', { style: { fontWeight: 600, marginBottom: 6 } }, '新建证据卡'),
+          panelHead('新建证据卡', '标题 + 原文'),
           h('label', { className: 'dwb-field' }, h('span', null, '标题'),
             h('input', { value: draft.evidenceTitle, onChange: event => setDraft(current => ({ ...current, evidenceTitle: event.target.value })) }),
           ),
@@ -2945,67 +3100,85 @@ export function createWorkbench({ React, api }) {
         h(
           'div',
           { className: 'dwb-pane' },
+          panelHead('攻防预判', selected === null ? '未选中节点' : String(selected.data?.label ?? '').slice(0, 20)),
           selected === null
-            ? h('div', { className: 'dwb-muted' }, '先在「论证树」里选一个论点节点。')
+            ? emptyState('🎯', '未选中论点', '在「论证树」里选中一个论点节点，这里会显示它的攻击预判与防守策略。')
             : h(
                 'div',
                 { className: 'dwb-list' },
-                (selectedBox?.attacks ?? []).length === 0 ? h('div', { className: 'dwb-muted' }, '这个节点还没有攻击预判。至少覆盖事实 / 逻辑 / 价值三类。') : null,
+                (selectedBox?.attacks ?? []).length === 0
+                  ? emptyState('🛡', '还没有攻击预判', '至少覆盖事实 / 逻辑 / 价值三类；威胁度 ≥4 必须写防守策略，否则会被判缺口。')
+                  : null,
                 (selectedBox?.attacks ?? []).map(attack =>
-                  h('div', { key: attack.id, className: 'dwb-item' },
-                    h('b', null, `${ATTACK_TYPES.find(item => item.value === attack.type)?.label ?? attack.type}｜威胁 ${attack.threatLevel}/5`),
-                    h('div', null, attack.content),
-                    h('div', { className: 'dwb-muted', style: { marginTop: 4, marginBottom: 2 } },
-                      attack.threatLevel >= 4 && !attack.defenseStrategy ? '⚠ 高威胁攻击必须有防守策略' : '防守策略'),
+                  h(
+                    'div',
+                    {
+                      key: attack.id,
+                      className: 'dwb-item',
+                      'data-tone': attack.threatLevel >= 4 && !attack.defenseStrategy ? 'danger' : undefined,
+                    },
+                    h(
+                      'div',
+                      { className: 'dwb-row', style: { justifyContent: 'space-between', marginBottom: 4 } },
+                      h('b', null, ATTACK_TYPES.find(item => item.value === attack.type)?.label ?? attack.type),
+                      h('span', { className: 'dwb-chip' }, `威胁 ${attack.threatLevel}/5`),
+                    ),
+                    h('div', { style: { lineHeight: 1.62 } }, attack.content),
+                    h(
+                      'div',
+                      { className: 'dwb-section', style: { marginTop: 9 } },
+                      attack.threatLevel >= 4 && !attack.defenseStrategy ? '⚠ 高威胁攻击必须有防守策略' : '防守策略',
+                    ),
                     h('textarea', {
+                      className: 'dwb-input',
                       defaultValue: attack.defenseStrategy ?? '',
                       placeholder: '写清楚「对方这么说，我方怎么答」',
-                      style: {
-                        width: '100%',
-                        minHeight: 46,
-                        font: 'inherit',
-                        fontSize: 12,
-                        borderRadius: 6,
-                        border: '1px solid rgba(150,165,220,0.25)',
-                        background: 'var(--dsw-alias-bg-layer-2, #161926)',
-                        color: 'inherit',
-                        padding: 5,
-                      },
+                      style: { width: '100%', minHeight: 50, resize: 'vertical', lineHeight: 1.6 },
                       onBlur: event =>
                         run('debate_attack', { action: 'update_attack', nodeId: selected.id, attackId: attack.id, attack: { defenseStrategy: event.target.value } }, '防守策略已保存'),
                     }),
-                    h('button', {
-                      type: 'button',
-                      className: 'dwb-btn',
-                      'data-danger': '1',
-                      style: { marginTop: 4 },
-                      onClick: () => run('debate_attack', { action: 'remove_attack', nodeId: selected.id, attackId: attack.id }, '已删除攻击'),
-                    }, '删除'),
+                    h(
+                      'div',
+                      { className: 'dwb-row', style: { marginTop: 7, justifyContent: 'flex-end' } },
+                      h('button', {
+                        type: 'button',
+                        className: 'dwb-btn',
+                        'data-danger': '1',
+                        onClick: () => run('debate_attack', { action: 'remove_attack', nodeId: selected.id, attackId: attack.id }, '已删除攻击'),
+                      }, '删除这条攻击'),
+                    ),
                   ),
                 ),
               ),
         ),
         h(
           'div',
-          { className: 'dwb-side', style: { flexBasis: 260 } },
-          h('div', { style: { fontWeight: 600, marginBottom: 6 } }, '新增攻击路径'),
+          { className: 'dwb-side', style: { flexBasis: 268 } },
+          panelHead('新增攻击路径', '事实 / 逻辑 / 价值'),
           h('label', { className: 'dwb-field' }, h('span', null, '类型'),
             h('select', { value: draft.attackType, onChange: event => setDraft(current => ({ ...current, attackType: event.target.value })) },
               ATTACK_TYPES.map(item => h('option', { key: item.value, value: item.value }, item.label))),
           ),
           h('label', { className: 'dwb-field' }, h('span', null, '对方会怎么打'),
-            h('textarea', { value: draft.attackContent, onChange: event => setDraft(current => ({ ...current, attackContent: event.target.value })) }),
+            h('textarea', { value: draft.attackContent, placeholder: '一句话写清对方的攻击路径', onChange: event => setDraft(current => ({ ...current, attackContent: event.target.value })) }),
           ),
-          h('label', { className: 'dwb-field' }, h('span', null, `威胁度：${draft.attackThreat}`),
+          h(
+            'label',
+            { className: 'dwb-field' },
+            h('div', { className: 'dwb-row', style: { justifyContent: 'space-between' } },
+              h('span', null, '威胁度'),
+              h('span', { className: 'dwb-chip' }, `${draft.attackThreat}/5`),
+            ),
             h('input', { type: 'range', min: 1, max: 5, value: draft.attackThreat, onChange: event => setDraft(current => ({ ...current, attackThreat: Number(event.target.value) })) }),
           ),
           h('label', { className: 'dwb-field' }, h('span', null, '防守策略（高威胁必填）'),
-            h('textarea', { value: draft.attackDefense, onChange: event => setDraft(current => ({ ...current, attackDefense: event.target.value })) }),
+            h('textarea', { value: draft.attackDefense, placeholder: '对方这么说，我方怎么答', onChange: event => setDraft(current => ({ ...current, attackDefense: event.target.value })) }),
           ),
           h('button', {
             type: 'button',
             className: 'dwb-btn',
             'data-primary': '1',
+            style: { width: '100%', justifyContent: 'center' },
             disabled: busy || selected === null || draft.attackContent.trim() === '',
             onClick: async () => {
               await run('debate_attack', {
@@ -3035,15 +3208,32 @@ export function createWorkbench({ React, api }) {
         ['抗反驳', scores.counterResilience],
       ]
       const gaps = (analysis?.gaps ?? []).filter(item => item.level !== 'info')
+      const overall = Number(scores.overall ?? 0)
+      const blocking = Number(analysis?.blocking ?? 0)
       return h(
         'div',
         { className: 'dwb-pane' },
+        panelHead('五维评估', '逻辑 25 · 证据 25 · 说服 20 · 创新 15 · 抗反驳 15'),
         h(
           'div',
-          { className: 'dwb-row', style: { alignItems: 'flex-start', gap: 20 } },
+          { className: 'dwb-stats' },
+          h('div', { className: 'dwb-stat', 'data-tone': 'brand' },
+            h('div', { className: 'dwb-stat-v' }, String(overall)),
+            h('div', { className: 'dwb-stat-k' }, '综合分 / 100')),
+          h('div', { className: 'dwb-stat' },
+            h('div', { className: 'dwb-stat-v' }, String(blocking)),
+            h('div', { className: 'dwb-stat-k' }, '阻塞缺口')),
+          h('div', { className: 'dwb-stat' },
+            h('div', { className: 'dwb-stat-v' }, String(gaps.length)),
+            h('div', { className: 'dwb-stat-k' }, '待补缺口')),
+        ),
+        h(
+          'div',
+          { className: 'dwb-row', style: { alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' } },
           h(
             'div',
-            { style: { width: 250 } },
+            { className: 'dwb-item', style: { flex: '1 1 268px', minWidth: 240, maxWidth: 360 } },
+            h('div', { className: 'dwb-section' }, '维度得分'),
             dimensions.map(([label, value]) =>
               h('div', { key: label, className: 'dwb-dim' },
                 h('span', null, label),
@@ -3051,11 +3241,10 @@ export function createWorkbench({ React, api }) {
                 h('span', null, String(Number(value ?? 0))),
               ),
             ),
-            h('div', { className: 'dwb-muted', style: { marginTop: 8 } }, `综合 ${Number(scores.overall ?? 0)}/100 · 阻塞缺口 ${Number(analysis?.blocking ?? 0)} 项`),
             h('button', {
               type: 'button',
               className: 'dwb-btn',
-              style: { marginTop: 8 },
+              style: { marginTop: 10, width: '100%', justifyContent: 'center' },
               disabled: busy,
               onClick: async () => {
                 try {
@@ -3068,17 +3257,17 @@ export function createWorkbench({ React, api }) {
             }, '生成苏格拉底追问'),
             questions.length === 0
               ? null
-              : h('div', { style: { marginTop: 8 } },
-                  h('div', { className: 'dwb-muted' }, '追问候选：'),
+              : h('div', { style: { marginTop: 10 } },
+                  h('div', { className: 'dwb-section' }, '追问候选'),
                   questions.map((question, index) => h('div', { key: index, className: 'dwb-gap' }, `${index + 1}. ${question}`)),
                 ),
           ),
           h(
             'div',
-            { style: { flex: 1, minWidth: 0 } },
-            h('div', { className: 'dwb-muted', style: { marginBottom: 4 } }, '最该补的缺口'),
+            { className: 'dwb-item', style: { flex: '1 1 320px', minWidth: 240 } },
+            h('div', { className: 'dwb-section' }, '最该补的缺口'),
             gaps.length === 0
-              ? h('div', { className: 'dwb-muted' }, '没有必须补或建议补的缺口。')
+              ? emptyState('✅', '没有必须补的缺口', '没有必须补或建议补的缺口。补完细节后可以跑一次完整评估复核。')
               : gaps.slice(0, 10).map((item, index) => h('div', { key: `${item.code}-${index}`, className: 'dwb-gap', 'data-level': item.level }, item.message)),
           ),
         ),
@@ -3089,12 +3278,14 @@ export function createWorkbench({ React, api }) {
     const renderManuscript = () =>
       h(
         'div',
-        { className: 'dwb-pane', style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+        { className: 'dwb-pane', style: { display: 'flex', flexDirection: 'column', gap: 11 } },
+        panelHead('稿件生成', '一辩稿 / 结辩稿 / 驳论清单'),
         h(
           'div',
-          { className: 'dwb-row' },
+          { className: 'dwb-item', style: { display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' } },
           h('select', { className: 'dwb-input', value: draft.manuscriptKind, onChange: event => setDraft(current => ({ ...current, manuscriptKind: event.target.value })) },
             h('option', { value: 'opening' }, '一辩稿'), h('option', { value: 'closing' }, '结辩稿'), h('option', { value: 'rebuttal' }, '驳论清单')),
+          h('span', { className: 'dwb-spacer' }),
           h('button', {
             type: 'button',
             className: 'dwb-btn',
@@ -3118,8 +3309,8 @@ export function createWorkbench({ React, api }) {
           h('a', { className: 'dwb-btn', href: api.exportUrl(), download: '' }, '导出 bundle'),
         ),
         preview === ''
-          ? h('div', { className: 'dwb-muted' }, '点「生成预览」按当前论证树组装稿件；〔待补〕处需要继续补写。')
-          : h('pre', { className: 'dwb-pre' }, preview),
+          ? emptyState('📝', '还没有预览', '点「生成预览」按当前论证树组装稿件；〔待补〕处需要继续补写，不要当终稿。')
+          : h('pre', { className: 'dwb-pre', style: { flex: '1 1 auto', minHeight: 0 } }, preview),
       )
 
     const content =
@@ -3143,7 +3334,7 @@ export function createWorkbench({ React, api }) {
       return h(
         'div',
         { className: 'dwb-shell', style: { padding: 20 } },
-        h('div', { style: { fontWeight: 650, marginBottom: 6 } }, '还没有激活的辩论项目'),
+        h('div', { className: 'dwb-empty-title', style: { marginBottom: 6, fontWeight: 650 } }, '还没有激活的辩论项目'),
         h('div', { className: 'dwb-muted' }, '在对话里说「开始备赛：<辩题>，我方持正」，让模型调用 debate_project(action=create) 建立项目；之后这个面板会自动加载项目数据。'),
       )
     }

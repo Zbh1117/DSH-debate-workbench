@@ -378,6 +378,64 @@ check('左向连线改用左边缘（自适应）', leftward.sx === 520 && leftw
 check('上下叠放改为纵向走线', Math.abs(vertical.sx - vertical.ex) < 60 && vertical.ey > vertical.sy, JSON.stringify({ sx: vertical.sx, sy: vertical.sy, ex: vertical.ex, ey: vertical.ey }))
 check('连线中点在两端之间', rightward.mx > rightward.sx && rightward.mx < rightward.ex, JSON.stringify({ mx: rightward.mx }))
 
+/* ---- 视觉改版（论证树以外的面板） ---- */
+// ui.js 的 ensureStyles 会写全局 document 上的 <style id="dwb-style">，直接从测试替身读回来
+const injectedStyle = String(globalThis.document.getElementById('dwb-style')?.textContent ?? '')
+check('设计令牌已注入', injectedStyle.includes('--dwb-ease') && injectedStyle.includes('--dwb-brand'), injectedStyle.slice(0, 80))
+check('面板标题样式存在', injectedStyle.includes('.dwb-panelhead') && injectedStyle.includes('.dwb-eyebrow'))
+check('空状态样式存在', injectedStyle.includes('.dwb-empty') && injectedStyle.includes('.dwb-empty-title'))
+check('统计卡样式存在', injectedStyle.includes('.dwb-stats') && injectedStyle.includes('.dwb-stat-v'))
+check('卡片/标签/引用块样式存在', injectedStyle.includes('.dwb-item:hover') && injectedStyle.includes('.dwb-tag') && injectedStyle.includes('.dwb-quote'))
+check('滚动条已美化', injectedStyle.includes('::-webkit-scrollbar-thumb'))
+check('支持降低动效', injectedStyle.includes('prefers-reduced-motion'))
+check('论证树画布样式保留', injectedStyle.includes('.dwb-canvas') && injectedStyle.includes('.dwb-node') && injectedStyle.includes('.dwb-edge'))
+
+// 逐个标签页渲染：不抛错，且除论证树外都有统一面板标题
+const classSet = node => {
+  const found = new Set()
+  const walk = item => {
+    if (item === null || item === undefined) return
+    if (Array.isArray(item)) { item.forEach(walk); return }
+    if (typeof item !== 'object') return
+    const cls = item.props?.className
+    if (typeof cls === 'string') cls.split(/\s+/).filter(Boolean).forEach(name => found.add(name))
+    walk(item.props?.children)
+  }
+  walk(node)
+  return found
+}
+const findTabButton = (node, label) => {
+  let found = null
+  const walk = item => {
+    if (found !== null || item === null || item === undefined) return
+    if (Array.isArray(item)) { item.forEach(walk); return }
+    if (typeof item !== 'object') return
+    if (item.props?.className === 'dwb-tabbtn' && item.props?.children === label) found = item
+    walk(item.props?.children)
+  }
+  walk(node)
+  return found
+}
+for (const label of ['拆题', '证据卡', '攻防', '评估', '稿件', '项目', '复盘']) {
+  stub.reset()
+  const probe = uiModule.createWorkbench({ React: stub.React, api })
+  const shell = probe({})
+  findTabButton(shell, label)?.props?.onClick?.()
+  stub.reset()
+  let rendered = null
+  let failure = ''
+  try {
+    rendered = probe({})
+  } catch (error) {
+    failure = String(error?.message ?? error)
+  }
+  const classes = rendered === null ? new Set() : classSet(rendered)
+  check(`「${label}」面板可渲染且使用统一标题`, failure === '' && classes.has('dwb-panelhead'), failure === '' ? [...classes].filter(name => name.startsWith('dwb-panel') || name === 'dwb-empty').join(',') : failure)
+}
+stub.reset()
+const backToTree = uiModule.createWorkbench({ React: stub.React, api })
+findTabButton(backToTree({}), '论证树')?.props?.onClick?.()
+
 const foot = children.find(child => child?.props?.className === 'dwb-foot')
 check('底部状态栏存在', foot !== undefined)
 
